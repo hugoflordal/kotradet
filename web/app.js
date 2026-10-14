@@ -310,6 +310,7 @@ function showAnimal(id) {
       ? `<span class="mother-link" data-id="${a.mother}">${byId[a.mother] ? byId[a.mother].short_id : a.mother}</span>`
       : '<em>Okänd / ej i databas</em>')}
     ${a.serving ? field('Betäckt', servingText(a.serving)) : ''}
+    ${a.organic_from ? field('Ekologisk', `Konventionell, blir ekologisk ${a.organic_from}.`) : ''}
     ${a.purchase_date ? field('Köpdatum', a.purchase_date + (a.purchase_from ? ` (från ${a.purchase_from})` : '')) : ''}
     ${animalList('Kalvar', calves)}
     ${animalList('Syskon', siblings)}

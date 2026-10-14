@@ -223,12 +223,17 @@ export function analyzeHerd(snapshots, config, today) {
   // bought animals) is organic; older animals need max(12 months, 3/4 of their
   // age at conversion) on the farm.
   const conventional = new Set();
+  // The day each conventional animal becomes organic.
+  const organicFrom = new Map();
   if (ecoDate) {
     for (const a of animals.values()) {
       const conv = a.purchase_date || ecoDate;
       if (a.birth > conv) continue;
       const required = Math.max(365, daysBetween(a.birth, conv) * 3 / 4);
-      if (daysBetween(conv, today) < required && !removed.has(a.id)) conventional.add(a.id);
+      if (daysBetween(conv, today) < required && !removed.has(a.id)) {
+        conventional.add(a.id);
+        organicFrom.set(a.id, addDays(conv, Math.ceil(required)));
+      }
     }
   }
 
@@ -259,6 +264,7 @@ export function analyzeHerd(snapshots, config, today) {
       failed: failed.has(a.id),
       conventional: conventional.has(a.id),
       serving: servingPeriod.get(a.id) ?? null,
+      organic_from: organicFrom.get(a.id) ?? null,
       purchase_date: a.purchase_date,
       purchase_from: a.purchase_from,
     };

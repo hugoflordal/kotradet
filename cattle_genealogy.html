@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koträd</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐄</text></svg>">
+<script src="https://unpkg.com/cytoscape@3/dist/cytoscape.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; }
+#header {
+  background: #fff; padding: 16px 24px; border-bottom: 1px solid #ddd;
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+}
+#header h1 { font-size: 1.3em; color: #333; }
+.stat { background: #e8f4fd; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: #1a5276; }
+#legend {
+  display: flex; gap: 12px; margin-left: auto; flex-wrap: wrap; align-items: center; font-size: 0.8em;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-swatch {
+  width: 16px; height: 16px; border-radius: 3px; border: 1px solid #999;
+  display: inline-block;
+}
+#container { display: flex; height: calc(100vh - 60px); }
+#graph { flex: 1; }
+#panel {
+  width: 320px; background: #fff; border-left: 1px solid #ddd;
+  padding: 20px; overflow-y: auto; transition: width 0.2s;
+}
+#panel.empty { display: flex; align-items: center; justify-content: center; color: #999; }
+#panel h2 { font-size: 1.1em; margin-bottom: 12px; color: #333; }
+#panel .field { margin-bottom: 10px; }
+#panel .field-label { font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
+#panel .field-value { font-size: 0.95em; color: #222; margin-top: 2px; }
+#panel .calves-list { list-style: none; padding: 0; }
+#panel .calves-list li {
+  padding: 6px 8px; margin: 4px 0; background: #f8f8f8; border-radius: 4px;
+  cursor: pointer; font-size: 0.9em;
+}
+#panel .calves-list li:hover { background: #e3f2fd; }
+#panel .mother-link { cursor: pointer; color: #1565c0; text-decoration: underline; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; margin: 2px; }
+.tag-covered { background: #fff3cd; color: #856404; }
+.tag-failed { background: #f8d7da; color: #721c24; }
+.tag-removed { background: #e2e3e5; color: #383d41; }
+.tag-bull { background: #f8d7da; color: #721c24; }
+.tag-cow { background: #cce5ff; color: #004085; }
+.tag-heifer { background: #d4edda; color: #155724; }
+.tag-conventional { background: #f5c6cb; color: #721c24; }
+.tag-slaughter { background: #c0392b; color: #fff; }
+.tag-sell { background: #2980b9; color: #fff; }
+.notes-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid #ddd; }
+.notes-section h3 { font-size: 0.9em; margin-bottom: 10px; color: #555; }
+.note-field { margin-bottom: 10px; }
+.note-field label { display: block; font-size: 0.75em; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 3px; }
+.note-field input[type="text"], .note-field textarea {
+  width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px;
+  font-family: inherit; font-size: 0.9em;
+}
+.note-field textarea { resize: vertical; min-height: 60px; }
+.note-field .checkbox-row { display: flex; align-items: center; gap: 8px; }
+.note-field .checkbox-row input[type="checkbox"] { width: 18px; height: 18px; }
+.note-field .checkbox-row label { text-transform: none; font-size: 0.9em; color: #222; }
+@media print {
+  #header, #panel { display: none !important; }
+  #container { height: auto !important; }
+  #graph { width: 100% !important; height: 100vh !important; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1 id="title">Koträd</h1>
+  <div id="stats"></div>
+  <div id="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:lightskyblue"></span> Ko/Kviga &ge;14m</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:aliceblue"></span> Kviga &lt;14m</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:lightpink"></span> Tjur &ge;6m</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:mistyrose"></span> Tjur &lt;6m</div>
+    <div class="legend-item"><span style="color:#e67e22; font-weight:bold;">&#x2605;</span> Betäckt</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#e2e3e5; border-style:dashed;"></span> Borta</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fff; border: 3px solid #c0392b;"></span> Konventionell</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#c0392b;"></span> Slakt</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#2980b9;"></span> Sälj</div>
+  </div>
+  <div style="display:flex; gap:6px; align-items:center;">
+    <button onclick="window.print()" title="Skriv ut trädet" style="padding:4px 10px; font-size:0.8em; cursor:pointer; border:1px solid #ccc; border-radius:4px; background:#fff;">Skriv ut</button>
+    <span id="save-status" style="font-size:0.75em; color:#888;"></span>
+  </div>
+</div>
+
+<div id="container">
+  <div id="graph"></div>
+  <div id="panel" class="empty"><span>Klicka på ett djur för mer info</span></div>
+</div>
+
+<script>
+const DATA = /*DATA_JSON*/null;
+const EMBEDDED_NOTES = /*NOTES_JSON*/null;
+
+// --- Notes persistence: in-memory + localStorage cache + disk save ---
+let allNotes = {};
+let fileHandle = null;
+let autoSaveEnabled = false;
+let saveTimeout = null;
+
+function initNotes() {
+  if (EMBEDDED_NOTES) allNotes = JSON.parse(JSON.stringify(EMBEDDED_NOTES));
+}
+initNotes();
+
+function loadAllNotes() { return allNotes; }
+function saveAllNotes(notes) {
+  allNotes = notes;
+  scheduleAutoSave();
+}
+function getNote(id) { return allNotes[id] || {}; }
+function setNote(id, note) {
+  if (!note.name && !note.slaughter && !note.sell && !note.comment) {
+    delete allNotes[id];
+  } else {
+    allNotes[id] = note;
+  }
+  scheduleAutoSave();
+}
+
+function scheduleAutoSave() {
+  if (!autoSaveEnabled) {
+    showStatus('Osparade ändringar', '#e67e22');
+    return;
+  }
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => writeToDisk(), 500);
+}
+
+async function writeToDisk() {
+  if (!fileHandle) return;
+  try {
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(allNotes, null, 2));
+    await writable.close();
+    showStatus('Sparat', '#27ae60');
+  } catch(e) {
+    autoSaveEnabled = false;
+    fileHandle = null;
+    showStatus('Sparning misslyckades', '#c0392b');
+  }
+}
+
+function showStatus(text, color) {
+  const el = document.getElementById('save-status');
+  if (el) { el.textContent = text; el.style.color = color; }
+}
+
+function nameToSvg(name) {
+  const w = name.length * 10 + 4;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="20"><text x="2" y="15" font-family="sans-serif" font-size="14" font-weight="bold" fill="#333">${name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text></svg>`;
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+function init(data) {
+  const { animals, edges, summary, date } = data;
+
+  document.getElementById('title').textContent = `Koträd ${date}`;
+  document.getElementById('stats').innerHTML = [
+    `<span class="stat">Tjurar: ${summary.tjurar}</span>`,
+    `<span class="stat">Kor: ${summary.kor}</span>`,
+    `<span class="stat">Kvigor: ${summary.kvigor}</span>`,
+    `<span class="stat">Betäckta: ${summary.betackta}</span>`,
+    `<span class="stat">Totalt: ${summary.totalt}</span>`,
+  ].join('');
+
+  const animalMap = {};
+  animals.forEach(a => animalMap[a.id] = a);
+  const allNotes = loadAllNotes();
+
+  // Build cytoscape elements
+  const elements = [];
+
+  animals.forEach(a => {
+    let bg, border;
+    if (a.removed) {
+      bg = a.sex === 'K' ? '#e0e0e0' : '#f0e0e0';
+      border = '#999';
+    } else if (a.sex === 'K') {
+      bg = a.age_months >= 14 ? '#87CEFA' : '#F0F8FF';
+      border = a.age_months >= 14 ? '#4682B4' : '#a0c4e8';
+    } else {
+      bg = a.age_months >= 6 ? '#FFB6C1' : '#FFE4E1';
+      border = a.age_months >= 6 ? '#DB7093' : '#e8b0b0';
+    }
+
+    const note = allNotes[a.id] || {};
+    let line1 = `${a.short_id}  ${a.age_str}`;
+    if (a.failed) line1 += ' \u2717';
+
+    let label = `${line1}\n${a.birth}`;
+
+    if (a.conventional && !a.removed) {
+      border = '#c0392b';
+    }
+
+    // Build background image arrays for corner markers
+    const bgImages = [];
+    const bgWidths = [];
+    const bgHeights = [];
+    const bgPosX = [];
+    const bgPosY = [];
+    const bgOffX = [];
+    const bgOffY = [];
+    const bgContain = [];
+    const bgClip = [];
+
+    const STAR_IMG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCI+PHBvbHlnb24gcG9pbnRzPSIxNCwxIDE4LDEwIDI4LDEwIDIwLDE2IDIzLDI2IDE0LDIxIDUsMjYgOCwxNiAwLDEwIDEwLDEwIiBmaWxsPSJibGFjayIvPjwvc3ZnPg==';
+    const CROSS_IMG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCI+PGxpbmUgeDE9IjQiIHkxPSI0IiB4Mj0iMjQiIHkyPSIyNCIgc3Ryb2tlPSJyZWQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGxpbmUgeDE9IjI0IiB5MT0iNCIgeDI9IjQiIHkyPSIyNCIgc3Ryb2tlPSJyZWQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+';
+    const SELL_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text x="4" y="23" font-family="sans-serif" font-size="24" font-weight="bold" fill="#2980b9">$</text></svg>');
+
+    if (a.served) {
+      bgImages.push(STAR_IMG);
+      bgWidths.push('28px'); bgHeights.push('28px');
+      bgPosX.push('100%'); bgPosY.push('0%');
+      bgOffX.push('6px'); bgOffY.push('-6px');
+      bgContain.push('over'); bgClip.push('none');
+    }
+    if (note.slaughter) {
+      bgImages.push(CROSS_IMG);
+      bgWidths.push('28px'); bgHeights.push('28px');
+      bgPosX.push('0%'); bgPosY.push('0%');
+      bgOffX.push('-6px'); bgOffY.push('-6px');
+      bgContain.push('over'); bgClip.push('none');
+    }
+    if (note.sell) {
+      bgImages.push(SELL_IMG);
+      bgWidths.push('28px'); bgHeights.push('28px');
+      bgPosX.push('0%'); bgPosY.push('0%');
+      bgOffX.push('-6px'); bgOffY.push('-6px');
+      bgContain.push('over'); bgClip.push('none');
+    }
+    if (note.name) {
+      bgImages.push(nameToSvg(note.name));
+      bgWidths.push('auto'); bgHeights.push('20px');
+      bgPosX.push('0%'); bgPosY.push('100%');
+      bgOffX.push('-2px'); bgOffY.push('4px');
+      bgContain.push('over'); bgClip.push('none');
+    }
+
+    const nodeData = {
+      id: a.id,
+      label: label,
+      bg: bg,
+      border: border,
+      borderWidth: a.conventional ? 4 : 1.5,
+      borderStyle: a.removed ? 'dashed' : 'solid',
+      textOpacity: a.removed ? 0.5 : 1,
+      year: a.year,
+    };
+
+    elements.push({
+      group: 'nodes',
+      data: nodeData,
+      style: bgImages.length ? {
+        'background-image': bgImages,
+        'background-width': bgWidths,
+        'background-height': bgHeights,
+        'background-position-x': bgPosX,
+        'background-position-y': bgPosY,
+        'background-offset-x': bgOffX,
+        'background-offset-y': bgOffY,
+        'background-image-containment': bgContain,
+        'background-clip': bgClip,
+        'bounds-expansion': '10px',
+      } : {},
+    });
+  });
+
+  edges.forEach(e => {
+    elements.push({
+      group: 'edges',
+      data: { source: e.from, target: e.to },
+    });
+  });
+
+  // Positions come from Graphviz layout (embedded in data)
+  // Graphviz has Y=0 at bottom, flip for screen coordinates
+  const maxY = Math.max(...animals.map(a => a.y));
+  const positions = {};
+  animals.forEach(a => {
+    positions[a.id] = { x: a.x, y: maxY - a.y };
+  });
+
+  const cy = cytoscape({
+    container: document.getElementById('graph'),
+    elements: elements,
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'label': 'data(label)',
+          'text-wrap': 'wrap',
+          'text-valign': 'center',
+          'text-halign': 'center',
+          'font-family': '"SF Mono", "Cascadia Code", "Fira Code", monospace',
+          'font-size': '24px',
+          'font-weight': 'bold',
+          'background-color': 'data(bg)',
+          'border-color': 'data(border)',
+          'border-width': 'data(borderWidth)',
+          'border-style': 'data(borderStyle)',
+          'text-opacity': 'data(textOpacity)',
+          'shape': 'round-rectangle',
+          'width': 'label',
+          'height': 'label',
+          'padding': '6px',
+          'color': '#222',
+        }
+      },
+      {
+        selector: 'node:selected',
+        style: {
+          'border-color': '#DAA520',
+          'border-width': 3,
+          'background-color': '#FFD700',
+          'z-index': 10,
+        }
+      },
+      {
+        selector: 'node:active',
+        style: {
+          'overlay-opacity': 0.08,
+        }
+      },
+      {
+        selector: 'edge',
+        style: {
+          'width': 2,
+          'line-color': '#666',
+          'target-arrow-color': '#666',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-fill': 'filled',
+          'arrow-scale': 1.5,
+          'curve-style': 'straight',
+        }
+      },
+      {
+        selector: 'edge:selected',
+        style: {
+          'line-color': '#333',
+          'target-arrow-color': '#333',
+          'width': 2.5,
+        }
+      },
+    ],
+    layout: {
+      name: 'preset',
+      positions: node => positions[node.id()],
+      fit: true,
+      padding: 30,
+    },
+    wheelSensitivity: 0.8,
+    minZoom: 0.15,
+    maxZoom: 3,
+  });
+
+  // Panel logic
+  const panel = document.getElementById('panel');
+
+  function selectAnimal(id) {
+    cy.$(':selected').unselect();
+    const node = cy.getElementById(id);
+    if (node.length) {
+      node.select();
+      cy.animate({ center: { eles: node }, zoom: 1.5 }, { duration: 400 });
+    }
+    showAnimal(id);
+  }
+
+  function showAnimal(id) {
+    const a = animalMap[id];
+    if (!a) return;
+
+    const calves = animals.filter(c => c.mother === id);
+    calves.sort((x, y) => x.birth.localeCompare(y.birth));
+    const siblings = a.mother ? animals.filter(c => c.mother === a.mother && c.id !== id) : [];
+
+    let tags = '';
+    if (a.sex === 'T') tags += '<span class="tag tag-bull">Tjur</span>';
+    else {
+      const isMother = animals.some(c => c.mother === id);
+      tags += isMother ? '<span class="tag tag-cow">Ko</span>' : '<span class="tag tag-heifer">Kviga</span>';
+    }
+    if (a.served) tags += '<span class="tag tag-covered">Betäckt</span>';
+    if (a.failed) tags += '<span class="tag tag-failed">Ej kalvat</span>';
+    if (a.conventional) tags += '<span class="tag tag-conventional">Konventionell</span>';
+    if (a.removed) tags += '<span class="tag tag-removed">Borta</span>';
+
+    const note = getNote(id);
+    if (note.slaughter) tags += '<span class="tag tag-slaughter">Slakt</span>';
+    if (note.sell) tags += '<span class="tag tag-sell">Sälj</span>';
+
+    panel.className = '';
+    panel.innerHTML = `
+      <h2>${a.id.replace(/^SE/, 'SE ')}</h2>
+      <div style="margin-bottom:12px">${tags}</div>
+      <div class="field">
+        <div class="field-label">Kort ID</div>
+        <div class="field-value">${a.short_id}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Födelsedatum</div>
+        <div class="field-value">${a.birth}${a.nameday && a.nameday.length ? ` <span style="color:#888; font-style:italic;">(${a.nameday.join(', ')})</span>` : ''}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Ålder</div>
+        <div class="field-value">${a.age_str} (${a.age_months} månader)</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Kön</div>
+        <div class="field-value">${a.sex === 'K' ? 'Kviga/Ko' : 'Tjur'}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Ras</div>
+        <div class="field-value">${a.breed}</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Mor</div>
+        <div class="field-value">${a.mother
+          ? `<span class="mother-link" data-id="${a.mother}">${animalMap[a.mother] ? animalMap[a.mother].short_id : a.mother}</span>`
+          : '<em>Okänd / ej i databas</em>'
+        }</div>
+      </div>
+      ${a.purchase_date ? `
+      <div class="field">
+        <div class="field-label">Köpdatum</div>
+        <div class="field-value">${a.purchase_date}${a.purchase_from ? ` (från ${a.purchase_from})` : ''}</div>
+      </div>` : ''}
+      ${calves.length ? `
+      <div class="field">
+        <div class="field-label">Kalvar (${calves.length})</div>
+        <ul class="calves-list">
+          ${calves.map(c => `<li data-id="${c.id}">${c.short_id} - ${c.birth} (${c.sex === 'K' ? 'K' : 'T'})${c.removed ? ' [borta]' : ''}</li>`).join('')}
+        </ul>
+      </div>` : ''}
+      ${siblings.length ? `
+      <div class="field">
+        <div class="field-label">Syskon (${siblings.length})</div>
+        <ul class="calves-list">
+          ${siblings.map(c => `<li data-id="${c.id}">${c.short_id} - ${c.birth} (${c.sex === 'K' ? 'K' : 'T'})${c.removed ? ' [borta]' : ''}</li>`).join('')}
+        </ul>
+      </div>` : ''}
+      <div class="notes-section">
+        <h3 style="display:flex; justify-content:space-between; align-items:center;">Anteckningar
+          ${!autoSaveEnabled ? '<button onclick="connectNotesFile()" style="padding:2px 8px; font-size:0.85em; cursor:pointer; border:1px solid #ccc; border-radius:4px; background:#fff3cd;">Spara till disk</button>' : ''}
+        </h3>
+        <div class="note-field">
+          <label for="note-name">Namn</label>
+          <input type="text" id="note-name" value="${note.name || ''}" placeholder="T.ex. Blenda">
+        </div>
+        <div class="note-field">
+          <div class="checkbox-row">
+            <input type="checkbox" id="note-slaughter" ${note.slaughter ? 'checked' : ''}>
+            <label for="note-slaughter">Skall slaktas</label>
+          </div>
+        </div>
+        <div class="note-field">
+          <div class="checkbox-row">
+            <input type="checkbox" id="note-sell" ${note.sell ? 'checked' : ''}>
+            <label for="note-sell">Skall säljas</label>
+          </div>
+        </div>
+        <div class="note-field">
+          <label for="note-comment">Kommentar</label>
+          <textarea id="note-comment" placeholder="Fritext...">${note.comment || ''}</textarea>
+        </div>
+      </div>
+    `;
+
+    // Auto-save notes on change
+    function saveCurrentNote() {
+      const n = {
+        name: document.getElementById('note-name').value.trim(),
+        slaughter: document.getElementById('note-slaughter').checked,
+        sell: document.getElementById('note-sell').checked,
+        comment: document.getElementById('note-comment').value.trim(),
+      };
+      setNote(id, n);
+      updateNodeLabel(id, a);
+    }
+    panel.querySelectorAll('#note-name, #note-comment').forEach(el => {
+      el.addEventListener('input', saveCurrentNote);
+    });
+    panel.querySelectorAll('#note-slaughter, #note-sell').forEach(el => {
+      el.addEventListener('change', saveCurrentNote);
+    });
+
+    panel.querySelectorAll('[data-id]').forEach(el => {
+      el.addEventListener('click', () => selectAnimal(el.dataset.id));
+    });
+  }
+
+  // Update a node's label after notes change
+  const STAR_IMG2 = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCI+PHBvbHlnb24gcG9pbnRzPSIxNCwxIDE4LDEwIDI4LDEwIDIwLDE2IDIzLDI2IDE0LDIxIDUsMjYgOCwxNiAwLDEwIDEwLDEwIiBmaWxsPSJibGFjayIvPjwvc3ZnPg==';
+  const CROSS_IMG2 = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCI+PGxpbmUgeDE9IjQiIHkxPSI0IiB4Mj0iMjQiIHkyPSIyNCIgc3Ryb2tlPSJyZWQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGxpbmUgeDE9IjI0IiB5MT0iNCIgeDI9IjQiIHkyPSIyNCIgc3Ryb2tlPSJyZWQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+';
+  const SELL_IMG2 = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text x="4" y="23" font-family="sans-serif" font-size="24" font-weight="bold" fill="#2980b9">$</text></svg>');
+
+  function updateNodeLabel(id, a) {
+    const note = getNote(id);
+    let line1 = `${a.short_id}  ${a.age_str}`;
+    if (a.failed) line1 += ' \u2717';
+
+    const label = `${line1}\n${a.birth}`;
+    const node = cy.getElementById(id);
+    node.data('label', label);
+
+    // Rebuild corner markers
+    const imgs = [], ws = [], hs = [], px = [], py = [], ox = [], oy = [], ct = [], cl = [];
+    if (a.served) {
+      imgs.push(STAR_IMG2); ws.push('20px'); hs.push('20px');
+      px.push('100%'); py.push('0%'); ox.push('6px'); oy.push('-6px');
+      ct.push('over'); cl.push('none');
+    }
+    if (note.slaughter) {
+      imgs.push(CROSS_IMG2); ws.push('20px'); hs.push('20px');
+      px.push('0%'); py.push('0%'); ox.push('-6px'); oy.push('-6px');
+      ct.push('over'); cl.push('none');
+    }
+    if (note.sell) {
+      imgs.push(SELL_IMG2); ws.push('20px'); hs.push('20px');
+      px.push('0%'); py.push('0%'); ox.push('-6px'); oy.push('-6px');
+      ct.push('over'); cl.push('none');
+    }
+    if (note.name) {
+      imgs.push(nameToSvg(note.name)); ws.push('auto'); hs.push('16px');
+      px.push('0%'); py.push('100%'); ox.push('-2px'); oy.push('4px');
+      ct.push('over'); cl.push('none');
+    }
+    if (imgs.length) {
+      node.style({
+        'background-image': imgs, 'background-width': ws, 'background-height': hs,
+        'background-position-x': px, 'background-position-y': py,
+        'background-offset-x': ox, 'background-offset-y': oy,
+        'background-image-containment': ct, 'background-clip': cl,
+        'bounds-expansion': '10px',
+      });
+    } else {
+      node.style({ 'background-image': 'none' });
+    }
+  }
+
+  cy.on('tap', 'node', evt => {
+    showAnimal(evt.target.id());
+  });
+}
+
+async function connectNotesFile() {
+  if (window.showSaveFilePicker) {
+    try {
+      fileHandle = await window.showSaveFilePicker({
+        suggestedName: 'notes.json',
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+      });
+      autoSaveEnabled = true;
+      await writeToDisk();
+      return true;
+    } catch(e) {
+      if (e.name === 'AbortError') return false;
+    }
+  }
+  // Fallback: download
+  const blob = new Blob([JSON.stringify(allNotes, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'notes.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showStatus('Nedladdad', '#27ae60');
+  return false;
+}
+
+if (DATA) {
+  init(DATA);
+} else {
+  fetch('cattle_data.json').then(r => r.json()).then(init);
+}
+</script>
+</body>
+</html>

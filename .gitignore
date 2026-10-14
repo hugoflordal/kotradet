@@ -1,0 +1,11 @@
+# Herd data never goes in the repo: CDB extracts contain the owner's personal
+# identity number and farm numbers.
+*.pdf
+notes.json
+config.json
+cattle_data.json
+cattle_genealogy
+cattle_genealogy.png
+cattle_genealogy_interactive.html
+__pycache__/
+.venv/

@@ -17,5 +17,7 @@ create policy "own herd" on public.herds
   with check (user_id = (select auth.uid()));
 
 -- Logged-out visitors get nothing; logged-in users only what the policy allows.
-revoke all on public.herds from anon;
+-- Supabase grants all privileges by default; TRUNCATE ignores row level security, so a
+-- logged-in user could empty everyone's rows. Keep only the four that obey the policy.
+revoke all on public.herds from anon, authenticated;
 grant select, insert, update, delete on public.herds to authenticated;

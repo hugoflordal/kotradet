@@ -267,13 +267,12 @@ function field(label, value) {
   return `<div class="field"><div class="field-label">${label}</div><div class="field-value">${value}</div></div>`;
 }
 
-// When she went to the pasture with a bull, as narrowly as the extracts allow.
+// When she was at the pasture with a bull, and when a calf can be expected.
 function servingText(s) {
-  const when = s.previous
-    ? `mellan ${s.previous} och ${s.first}`
-    : `senast ${s.first}`;
-  const stayed = s.last !== s.first ? `, på betet med tjur till minst ${s.last}` : '';
-  return `Kom ihop med tjur ${when}${stayed}.<br><span style="color:#888;">Kalvning tidigast ca ${s.calving}.</span>`;
+  const from = s.fromKnown ? s.from : `${s.from} eller tidigare`;
+  const period = s.until ? `${from} – ${s.until}` : `sedan ${from}`;
+  const earlier = s.earlier ? `<br>Var också med tjur från ${s.earlier} utan att kalva efter det.` : '';
+  return `Med tjur på bete ${period}.${earlier}<br><span style="color:#888;">Kalvning tidigast ca ${s.calving}.</span>`;
 }
 
 function showAnimal(id) {

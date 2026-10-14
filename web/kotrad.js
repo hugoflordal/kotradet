@@ -190,22 +190,32 @@ export function analyzeHerd(snapshots, config, today) {
   }
   for (const id of expired) served.delete(id);
 
-  // When the current serving happened, for served and failed females: the extracts
-  // with her and a bull at the pasture after her latest calf. The real date lies
-  // between the extract before the first of them and the first.
+  // When the current serving happened, for served and failed females. Extracts are
+  // taken whenever something changes, so the first extract after her latest calf with
+  // her and a bull at the pasture is the day they came together, and the next extract
+  // without that is the day they were parted. In the very first extract the start is
+  // unknown (it may have been earlier).
   const servingPeriod = new Map();
   const snapDates = snaps.map(s => s.date);
   for (const id of new Set([...served, ...failed])) {
     const calves = calvesOf(id);
-    const dates = servedDates.get(id).filter(d => !calves.some(c => c > d)).sort();
-    if (!dates.length) continue;
-    const before = snapDates.filter(d => d < dates[0]).pop() ?? null;
+    const dates = new Set(servedDates.get(id).filter(d => !calves.some(c => c > d)));
+    if (!dates.size) continue;
+    // The latest unbroken run of extracts with her and a bull at the pasture.
+    let end = snapDates.length - 1;
+    while (!dates.has(snapDates[end])) end--;
+    let start = end;
+    while (start > 0 && dates.has(snapDates[start - 1])) start--;
+    const from = snapDates[start];
+    const earlier = [...dates].filter(d => d < from).sort();
     servingPeriod.set(id, {
-      first: dates[0],
-      last: dates[dates.length - 1],
-      previous: before,
-      // Cows carry about 283 days; counted from the earliest possible serving date.
-      calving: addDays(before ?? dates[0], 283),
+      from,
+      fromKnown: start > 0,
+      until: snapDates[end + 1] ?? null,
+      // Cows carry about 283 days.
+      calving: addDays(from, 283),
+      // An earlier time with a bull that gave no calf, if any.
+      earlier: earlier[0] ?? null,
     });
   }
 

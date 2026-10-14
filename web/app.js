@@ -113,7 +113,7 @@ async function layout(d) {
 function svgData(svg) {
   return 'data:image/svg+xml,' + encodeURIComponent(svg);
 }
-const STAR_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><polygon points="14,1 18,10 28,10 20,16 23,26 14,21 5,26 8,16 0,10 10,10" fill="black"/></svg>');
+const STAR_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><polygon points="14,1 18,10 28,10 20,16 23,26 14,21 5,26 8,16 0,10 10,10" fill="#e67e22" stroke="#8a4a10" stroke-width="1"/></svg>');
 const CROSS_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><line x1="4" y1="4" x2="24" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/><line x1="24" y1="4" x2="4" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/></svg>');
 const SELL_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text x="4" y="23" font-family="sans-serif" font-size="24" font-weight="bold" fill="#2980b9">$</text></svg>');
 
@@ -267,6 +267,15 @@ function field(label, value) {
   return `<div class="field"><div class="field-label">${label}</div><div class="field-value">${value}</div></div>`;
 }
 
+// When she went to the pasture with a bull, as narrowly as the extracts allow.
+function servingText(s) {
+  const when = s.previous
+    ? `mellan ${s.previous} och ${s.first}`
+    : `senast ${s.first}`;
+  const stayed = s.last !== s.first ? `, på betet med tjur till minst ${s.last}` : '';
+  return `Kom ihop med tjur ${when}${stayed}.<br><span style="color:#888;">Kalvning tidigast ca ${s.calving}.</span>`;
+}
+
 function showAnimal(id) {
   const animals = data.animals;
   const byId = Object.fromEntries(animals.map(a => [a.id, a]));
@@ -301,6 +310,7 @@ function showAnimal(id) {
     ${field('Mor', a.mother
       ? `<span class="mother-link" data-id="${a.mother}">${byId[a.mother] ? byId[a.mother].short_id : a.mother}</span>`
       : '<em>Okänd / ej i databas</em>')}
+    ${a.serving ? field('Betäckt', servingText(a.serving)) : ''}
     ${a.purchase_date ? field('Köpdatum', a.purchase_date + (a.purchase_from ? ` (från ${a.purchase_from})` : '')) : ''}
     ${animalList('Kalvar', calves)}
     ${animalList('Syskon', siblings)}

@@ -22,6 +22,11 @@ function daysBetween(from, to) {
   return dayNumber(to) - dayNumber(from);
 }
 
+export function addDays(s, days) {
+  const { y, m, d } = parseDate(s);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
 // Month difference ignoring the day of month.
 function calendarMonths(from, to) {
   const a = parseDate(from), b = parseDate(to);
@@ -185,6 +190,25 @@ export function analyzeHerd(snapshots, config, today) {
   }
   for (const id of expired) served.delete(id);
 
+  // When the current serving happened, for served and failed females: the extracts
+  // with her and a bull at the pasture after her latest calf. The real date lies
+  // between the extract before the first of them and the first.
+  const servingPeriod = new Map();
+  const snapDates = snaps.map(s => s.date);
+  for (const id of new Set([...served, ...failed])) {
+    const calves = calvesOf(id);
+    const dates = servedDates.get(id).filter(d => !calves.some(c => c > d)).sort();
+    if (!dates.length) continue;
+    const before = snapDates.filter(d => d < dates[0]).pop() ?? null;
+    servingPeriod.set(id, {
+      first: dates[0],
+      last: dates[dates.length - 1],
+      previous: before,
+      // Cows carry about 283 days; counted from the earliest possible serving date.
+      calving: addDays(before ?? dates[0], 283),
+    });
+  }
+
   // Organic conversion: born after the conversion date (or purchase date for
   // bought animals) is organic; older animals need max(12 months, 3/4 of their
   // age at conversion) on the farm.
@@ -224,6 +248,7 @@ export function analyzeHerd(snapshots, config, today) {
       served: served.has(a.id),
       failed: failed.has(a.id),
       conventional: conventional.has(a.id),
+      serving: servingPeriod.get(a.id) ?? null,
       purchase_date: a.purchase_date,
       purchase_from: a.purchase_from,
     };

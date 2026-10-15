@@ -20,12 +20,12 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 
 let saveTimer = null;
 function changed() {
-  showStatus('Sparar…', '#888');
+  showStatus('Sparar…', '#4d6b3c');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
       await store.save(herd);
-      showStatus(`Sparat i ${store.name}`, '#27ae60');
+      showStatus(`Sparat i ${store.name}`, '#1e6b30');
     } catch (e) {
       showStatus('Kunde inte spara: ' + e.message, '#c0392b');
     }
@@ -348,7 +348,7 @@ function servingText(s) {
   const from = s.fromKnown ? s.from : `${s.from} eller tidigare`;
   const period = s.until ? `${from} – ${s.until}` : `sedan ${from}`;
   const earlier = s.earlier ? `<br>Var också med tjur från ${s.earlier} utan att kalva efter det.` : '';
-  return `Med tjur på bete ${period}.${earlier}<br><span style="color:#888;">Kalvning tidigast ca ${s.calving}.</span>`;
+  return `Med tjur på bete ${period}.${earlier}<br><span style="color:#4d6b3c;">Kalvning tidigast ca ${s.calving}.</span>`;
 }
 
 function showAnimal(id) {
@@ -380,7 +380,7 @@ function showAnimal(id) {
     <h2>${a.id.replace(/^SE/, 'SE ')}</h2>
     <div style="margin-bottom:12px">${tags}</div>
     ${field('Kort ID', a.short_id)}
-    ${field('Födelsedatum', a.birth + (names.length ? ` <span style="color:#888; font-style:italic;">(${esc(names.join(', '))})</span>` : ''))}
+    ${field('Födelsedatum', a.birth + (names.length ? ` <span style="color:#4d6b3c; font-style:italic;">(${esc(names.join(', '))})</span>` : ''))}
     ${field('Ålder', `${a.age_str} (${a.age_months} månader)`)}
     ${field('Kön', a.sex === 'K' ? 'Kviga/Ko' : 'Tjur')}
     ${field('Ras', a.breed)}

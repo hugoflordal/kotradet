@@ -163,18 +163,19 @@ function nameImg(name) {
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="20"><text x="2" y="15" font-family="sans-serif" font-size="14" font-weight="bold" fill="#333">${esc(name)}</text></svg>`);
 }
 
-// Corner markers: star = served, cross = slaughter, $ = sell, yellow tag = missing
-// ear tag, black crosses above = missed calvings, name below.
+// Corner markers: yellow tag = missing ear tag (top right), star = served (bottom
+// right), cross = slaughter, $ = sell, black crosses above = missed calvings,
+// name below.
 function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
-  if (a.served) corner(STAR_IMG, '100%', '6px');
+  if (a.served) marks.push({ img: STAR_IMG, w: '28px', h: '28px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
   const missed = a.missed_calvings.length;
   if (missed) marks.push({ img: missedImg(missed), w: `${missed * 20}px`, h: '20px', x: '50%', y: '0%', ox: '0px', oy: '-22px' });
   const tags = note.tags_missing;
-  if (tags) marks.push({ img: TAG_IMG[tags], w: tags === 2 ? '36px' : '22px', h: '28px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
+  if (tags) marks.push({ img: TAG_IMG[tags], w: tags === 2 ? '36px' : '22px', h: '28px', x: '100%', y: '0%', ox: '6px', oy: '-6px' });
   if (note.name) marks.push({ img: nameImg(note.name), w: 'auto', h: '20px', x: '0%', y: '100%', ox: '-2px', oy: '4px' });
   if (!marks.length) return { 'background-image': 'none' };
   return {

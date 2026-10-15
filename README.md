@@ -1,7 +1,7 @@
 # Koträdet
 
 Stamträd för en nötdjursbesättning, ritat från utdrag ur CDB (Jordbruksverkets
-centrala djurdatabas). Öppna det på <https://hugomannen.github.io/kotradet/>.
+centrala djurdatabas). Öppna det på <https://hugoflordal.github.io/kotradet/>.
 
 ![Koträdet med en påhittad besättning](docs/screenshot.png)
 
@@ -58,7 +58,7 @@ Uppsättning:
 2. Lägg projektets publika nyckel (anon/publishable) i `web/config.js`. Den får vara
    publik; `service_role`-nyckeln får aldrig hamna här.
 3. Authentication → URL Configuration: Site URL och Redirect URLs =
-   sidans adress (t.ex. `https://hugomannen.github.io/kotradet/`) och
+   sidans adress (t.ex. `https://hugoflordal.github.io/kotradet/`) och
    `http://localhost:8001/`.
 4. Logga in en gång och stäng sedan av nya registreringar om ingen annan ska
    använda sidan.

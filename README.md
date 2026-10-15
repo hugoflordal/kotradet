@@ -25,10 +25,7 @@ På varje djurs kort kan man dessutom sätta namn, färg (svart, grå, ljusbrun 
 Hereford-röd), saknade öronmärken, att djuret ska slaktas eller säljas och en
 kommentar. Allt visas som små symboler i trädet.
 
-Det finns två versioner: webbversionen nedan, som är den som utvecklas, och det
-ursprungliga Python-skriptet, som gör en bild och en enklare interaktiv sida.
-
-## Webbversion
+## Sidan
 
 Mappen `web/` är en webbsida som körs helt i webbläsaren. Man läser in utdragen som
 PDF på sidan (eller drar dit dem), ställer in sommarbete och omställningsdatum under
@@ -42,8 +39,7 @@ Provkör lokalt med `make web` och öppna `http://localhost:8001/`. Sidan behöv
 ingen byggprocess: `index.html`, `app.js`, `kotrad.js` och `storage.js` kan läggas
 på vilken webbserver som helst.
 
-- `kotrad.js`: tolkning av utdragen och analysen av besättningen (rena funktioner,
-  ger samma resultat som `cdb.py`).
+- `kotrad.js`: tolkning av utdragen och analysen av besättningen (rena funktioner).
 - `storage.js`: var datan sparas: i webbläsaren, eller på användarens konto i
   Supabase när `config.js` har en nyckel.
 - `config.js`: Supabase-projektets adress och publika nyckel. Tom nyckel betyder
@@ -51,7 +47,7 @@ på vilken webbserver som helst.
 - `app.js`: sidan, med PDF-läsning (pdf.js), layout (Graphviz som WebAssembly) och
   ritning (Cytoscape.js).
 
-### Inloggning och lagring (Supabase)
+## Inloggning och lagring (Supabase)
 
 Med en nyckel i `config.js` loggar man in med en länk i mejlet, och allt sparas på
 kontot i tabellen `herds`. Varje användare kan bara läsa och skriva sin egen rad.
@@ -70,31 +66,8 @@ Sidan publiceras på GitHub Pages av `.github/workflows/pages.yml` (Settings →
 Pages → Source: GitHub Actions). Gratisplanen i Supabase har inga backuper att
 återställa själv: använd *Exportera allt* under *Inställningar*.
 
-## Python-version
-
-Skriptet `cdb.py` läser alla utdrag i en mapp och gör en bild
-(`cattle_genealogy.png`) och en interaktiv webbsida
-(`cattle_genealogy_interactive.html`) där man kan sätta namn och anteckningar på
-djuren. Det saknar det som har tillkommit i webbversionen, som far, färg och
-öronmärken.
-
-1. Ladda ned *Djurinnehav*-utdrag från CDB som PDF och lägg dem i en mapp.
-2. Kopiera `config.example.json` till `config.json` i samma mapp och fyll i:
-   - `summer_pasture`: produktionsplatsnummer för betet där tjur och kor går ihop.
-     Används för att avgöra vilka djur som är betäckta.
-   - `eco_date`: datum då produktionen blev ekologisk.
-3. Kör:
-
-   ```sh
-   make DATA=/sökväg/till/mappen
-   ```
-
-   eller `make serve DATA=...` för att visa den interaktiva sidan på
-   `http://<datorn>:8000/`.
-
-Kräver Python 3 och Graphviz (`dot`).
-
 ## Data
 
 Utdragen innehåller djurhållarens personnummer och produktionsplatsnummer. Lägg aldrig
-PDF-filer, `notes.json` eller `config.json` i repot. `.gitignore` stoppar dem.
+PDF-filer, exporter (`kotradet-*.json`) eller `notes.json` i repot. `.gitignore`
+stoppar dem.

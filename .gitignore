@@ -3,9 +3,4 @@
 *.pdf
 notes.json
 config.json
-cattle_data.json
-cattle_genealogy
-cattle_genealogy.png
-cattle_genealogy_interactive.html
-__pycache__/
-.venv/
+kotradet-*.json

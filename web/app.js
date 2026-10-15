@@ -149,7 +149,7 @@ const TAG_IMG = {
   2: svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="28"><path ${TAG_SHAPE}/><circle cx="11" cy="6" ${TAG_HOLE}/><path transform="translate(14 0)" ${TAG_SHAPE}/><circle cx="25" cy="6" ${TAG_HOLE}/></svg>`),
 };
 
-// One black cross per missed calving, in a row above the box.
+// One black cross per missed calving, in a row.
 function missedImg(count) {
   const crosses = Array.from({ length: count }, (_, i) => {
     const x = i * 20;
@@ -158,14 +158,15 @@ function missedImg(count) {
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${count * 20}" height="20">${crosses}</svg>`);
 }
 
+// The name on a small white label with a thin frame.
 function nameImg(name) {
-  const w = name.length * 10 + 4;
-  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="20"><text x="2" y="15" font-family="sans-serif" font-size="14" font-weight="bold" fill="#333">${esc(name)}</text></svg>`);
+  const w = name.length * 9 + 14;
+  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="22"><rect x="1" y="1" width="${w - 2}" height="20" rx="4" fill="#fff" stroke="#888" stroke-width="1"/><text x="${w / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#222">${esc(name)}</text></svg>`);
 }
 
 // Corner markers: yellow tag = missing ear tag (top right), star = served (bottom
-// right), cross = slaughter, $ = sell, black crosses above = missed calvings,
-// name below.
+// right) with black crosses for missed calvings to its left, cross = slaughter,
+// $ = sell, name label at the bottom left.
 function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
@@ -173,10 +174,10 @@ function markerStyle(a, note) {
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
   const missed = a.missed_calvings.length;
-  if (missed) marks.push({ img: missedImg(missed), w: `${missed * 20}px`, h: '20px', x: '50%', y: '0%', ox: '0px', oy: '-22px' });
+  if (missed) marks.push({ img: missedImg(missed), w: `${missed * 20}px`, h: '20px', x: '100%', y: '100%', ox: '-22px', oy: '2px' });
   const tags = note.tags_missing;
   if (tags) marks.push({ img: TAG_IMG[tags], w: tags === 2 ? '36px' : '22px', h: '28px', x: '100%', y: '0%', ox: '6px', oy: '-6px' });
-  if (note.name) marks.push({ img: nameImg(note.name), w: 'auto', h: '20px', x: '0%', y: '100%', ox: '-2px', oy: '4px' });
+  if (note.name) marks.push({ img: nameImg(note.name), w: 'auto', h: '22px', x: '0%', y: '100%', ox: '-4px', oy: '8px' });
   if (!marks.length) return { 'background-image': 'none' };
   return {
     'background-image': marks.map(m => m.img),

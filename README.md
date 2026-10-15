@@ -1,24 +1,42 @@
 # Koträdet
 
 Stamträd för en nötdjursbesättning, ritat från utdrag ur CDB (Jordbruksverkets
-centrala djurdatabas).
+centrala djurdatabas). Öppna det på <https://proverhugo.github.io/kotradet/>.
 
-Skriptet läser alla utdrag av typen *Djurinnehav* (PDF) i en mapp och ritar ett träd
-där varje djur är kopplat till sin mor, ordnat efter födelseår. Det markerar bland annat
-djur som har försvunnit ur besättningen, betäckta kvigor och kor, kor som borde ha
-kalvat och djur som ännu inte är färdigställda som ekologiska. Resultatet blir en
-bild (`cattle_genealogy.png`) och en interaktiv webbsida
-(`cattle_genealogy_interactive.html`) där man kan sätta namn och anteckningar på
-djuren.
+![Koträdet med en påhittad besättning](docs/screenshot.png)
+
+*Skärmbilden visar en påhittad besättning.*
+
+Man hämtar utdraget *Djurinnehav* som PDF från CDB varje gång något ändras i
+besättningen, till exempel när djur föds, köps, säljs eller flyttas till eller från
+bete. Koträdet läser in utdragen och ritar ett träd där varje djur sitter under sin
+mor, ordnat efter födelseår. Genom att jämföra utdragen över tid räknar det ut:
+
+- **Borta:** djur som har försvunnit ur besättningen (sålda, slaktade eller döda).
+- **Betäckt:** kor och kvigor från 14 månader som har gått på sommarbetet samtidigt
+  som en tjur från 6 månader, med betesperiod, tjur och tidigaste kalvning.
+- **Ej kalvat:** ett svart kryss för varje betesperiod med tjur som inte gav någon
+  kalv inom 10 månader.
+- **Far:** tjuren som gick med mamman på betet när kalven blev till.
+- **Konventionell:** djur som ännu inte är omställda till ekologiska, och datumet då
+  de blir det.
+
+På varje djurs kort kan man dessutom sätta namn, färg (svart, grå, ljusbrun eller
+Hereford-röd), saknade öronmärken, att djuret ska slaktas eller säljas och en
+kommentar. Allt visas som små symboler i trädet.
+
+Det finns två versioner: webbversionen nedan, som är den som utvecklas, och det
+ursprungliga Python-skriptet, som gör en bild och en enklare interaktiv sida.
 
 ## Webbversion
 
-Mappen `web/` är samma verktyg som en webbsida som körs helt i webbläsaren. Man läser
-in utdragen som PDF på sidan (eller drar dit dem), ställer in sommarbete och
-omställningsdatum under *Inställningar* och sätter namn och anteckningar direkt på
-djuren. PDF:erna laddas inte upp någonstans, och allt sparas automatiskt i
-webbläsaren. Gamla anteckningar från `notes.json` kan importeras under
-*Inställningar*.
+Mappen `web/` är en webbsida som körs helt i webbläsaren. Man läser in utdragen som
+PDF på sidan (eller drar dit dem), ställer in sommarbete och omställningsdatum under
+*Inställningar* och sätter anteckningar direkt på djuren. PDF:erna tolkas i
+webbläsaren och laddas aldrig upp. Det som läses ut ur dem sparas automatiskt, på
+användarens konto när man är inloggad (se nedan) och annars i webbläsaren. På
+telefon lägger sig trädet på andra ledden och djurets kort glider upp nerifrån.
+Gamla anteckningar från `notes.json` kan importeras under *Inställningar*.
 
 Provkör lokalt med `make web` och öppna `http://localhost:8001/`. Sidan behöver
 ingen byggprocess: `index.html`, `app.js`, `kotrad.js` och `storage.js` kan läggas
@@ -53,6 +71,12 @@ Pages → Source: GitHub Actions). Gratisplanen i Supabase har inga backuper att
 återställa själv: använd *Exportera allt* under *Inställningar*.
 
 ## Python-version
+
+Skriptet `cdb.py` läser alla utdrag i en mapp och gör en bild
+(`cattle_genealogy.png`) och en interaktiv webbsida
+(`cattle_genealogy_interactive.html`) där man kan sätta namn och anteckningar på
+djuren. Det saknar det som har tillkommit i webbversionen, som far, färg och
+öronmärken.
 
 1. Ladda ned *Djurinnehav*-utdrag från CDB som PDF och lägg dem i en mapp.
 2. Kopiera `config.example.json` till `config.json` i samma mapp och fyll i:

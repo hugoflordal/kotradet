@@ -165,13 +165,39 @@ function nameImg(name) {
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="22"><rect x="1" y="1" width="${w - 2}" height="20" rx="4" fill="#fff" stroke="#888" stroke-width="1"/><text x="${w / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#222">${esc(name)}</text></svg>`);
 }
 
+// Coat colours, each drawn as a small cow (larger than the served calf): coat,
+// udder, eye, and the Hereford's white face.
+const COLORS = {
+  svart: { label: 'Svart', coat: '#1b1b1b', eye: '#ddd' },
+  gra: { label: 'Grå', coat: '#8e8e8e', eye: '#222' },
+  ljusbrun: { label: 'Ljusbrun', coat: '#c8955c', eye: '#222' },
+  hereford: { label: 'Hereford-röd', coat: '#9b3412', eye: '#222', face: '#fff' },
+};
+
+function cowImg(c) {
+  const face = c.face ? `<path d="M34.4 3.4 Q36.6 2.6 37.6 4 L38.6 7.8 Q38.9 9.8 37 10 L35.4 10 Q34 7 34.4 3.4 Z" fill="${c.face}"/>` : '';
+  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="28" viewBox="0 0 40 28">`
+    + `<path d="M33 3.6 Q33.2 1.2 31.6 0.8" fill="none" stroke="#eee" stroke-width="1.2" stroke-linecap="round"/>`
+    + `<g fill="${c.coat}" stroke="#222" stroke-width="0.8" stroke-linejoin="round">`
+    + `<path d="M7.5 9 Q4.5 13 5 19" fill="none" stroke="${c.coat}" stroke-width="1.4" stroke-linecap="round"/>`
+    + `<rect x="9" y="17" width="2.8" height="9" rx="1.2"/><rect x="13" y="17" width="2.8" height="9" rx="1.2"/>`
+    + `<rect x="25" y="17" width="2.8" height="9" rx="1.2"/><rect x="29" y="17" width="2.8" height="9" rx="1.2"/>`
+    + `<path d="M7 10 Q7 6 11 6 L28 6 Q30 6 31 5 L32 3.5 Q34.5 2 37.5 3.5 L39 7.5 Q39.5 10 37 10.5 L34 10.5 Q32.5 12 32 15 Q31.5 20 27 20 L11 20 Q7 20 7 16 Z"/>`
+    + `<path d="M33.5 4.5 Q30.5 3 29.8 5 Q31.8 6.4 33.5 5.8 Z"/></g>`
+    + `<ellipse cx="21" cy="20.6" rx="2.6" ry="1.6" fill="#e9a3a3" stroke="#222" stroke-width="0.6"/>`
+    + `${face}<circle cx="35.8" cy="5.6" r="0.8" fill="${c.eye}"/></svg>`);
+}
+const COW_IMG = Object.fromEntries(Object.entries(COLORS).map(([key, c]) => [key, cowImg(c)]));
+
 // Corner markers: yellow tag = missing ear tag (top right), calf = served (bottom
-// right) with black crosses for missed calvings to its left, cross = slaughter,
-// $ = sell, name label at the bottom left.
+// right) with black crosses for missed calvings to its left, coat colour cow (top
+// left) with the slaughter cross or $ = sell drawn over it, name label at the
+// bottom left.
 function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
   if (a.served) marks.push({ img: CALF_IMG, w: '32px', h: '24px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
+  if (COW_IMG[note.color]) marks.push({ img: COW_IMG[note.color], w: '40px', h: '28px', x: '0%', y: '0%', ox: '-8px', oy: '-10px' });
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
   const missed = a.missed_calvings.length;
@@ -386,6 +412,13 @@ function showAnimal(id) {
         </div>
       </div>
       <div class="note-field">
+        <label for="note-color">Färg</label>
+        <select id="note-color">
+          <option value="">Okänd</option>
+          ${Object.entries(COLORS).map(([key, c]) => `<option value="${key}" ${note.color === key ? 'selected' : ''}>${c.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="note-field">
         <label for="note-tags">Öronmärken</label>
         <select id="note-tags">
           <option value="0">Båda sitter i</option>
@@ -407,9 +440,10 @@ function showAnimal(id) {
       sell: $('note-sell').checked,
       comment: $('note-comment').value.trim(),
     };
+    if ($('note-color').value) n.color = $('note-color').value;
     const tagsMissing = Number($('note-tags').value);
     if (tagsMissing) n.tags_missing = tagsMissing;
-    if (!n.name && !n.slaughter && !n.sell && !n.comment && !n.tags_missing) delete herd.notes[id];
+    if (!n.name && !n.slaughter && !n.sell && !n.comment && !n.tags_missing && !n.color) delete herd.notes[id];
     else herd.notes[id] = n;
     cy.getElementById(id).style(markerStyle(a, n));
     changed();
@@ -418,6 +452,7 @@ function showAnimal(id) {
   $('note-comment').addEventListener('input', saveNote);
   $('note-slaughter').addEventListener('change', saveNote);
   $('note-sell').addEventListener('change', saveNote);
+  $('note-color').addEventListener('change', saveNote);
   $('note-tags').addEventListener('change', () => { saveNote(); showAnimal(id); });
   $('panel-close').addEventListener('click', () => {
     cy.$(':selected').unselect();

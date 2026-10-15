@@ -358,11 +358,12 @@ function field(label, value) {
 }
 
 // When she was at the pasture with a bull, and when a calf can be expected.
-function servingText(s) {
+function servingText(s, link) {
   const from = s.fromKnown ? s.from : `${s.from} eller tidigare`;
   const period = s.until ? `${from} – ${s.until}` : `sedan ${from}`;
   const earlier = s.earlier ? `<br>Var också med tjur från ${s.earlier} utan att kalva efter det.` : '';
-  return `Med tjur på bete ${period}.${earlier}<br><span style="color:#4d6b3c;">Kalvning tidigast ca ${s.calving}.</span>`;
+  const bulls = s.bulls.map(link).join(' eller ');
+  return `Med tjur ${bulls} på bete ${period}.${earlier}<br><span style="color:#4d6b3c;">Kalvning tidigast ca ${s.calving}.</span>`;
 }
 
 function showAnimal(id) {
@@ -387,6 +388,7 @@ function showAnimal(id) {
   if (note.sell) tags += '<span class="tag tag-sell">Sälj</span>';
   if (note.tags_missing) tags += `<span class="tag tag-eartag">Saknar ${note.tags_missing === 2 ? 'båda öronmärkena' : 'ett öronmärke'}</span>`;
 
+  const link = other => `<span class="mother-link" data-id="${other}">${byId[other] ? byId[other].short_id : other}</span>`;
   const panel = $('panel');
   panel.className = '';
   panel.innerHTML = `
@@ -398,10 +400,9 @@ function showAnimal(id) {
     ${field('Ålder', `${a.age_str} (${a.age_months} månader)`)}
     ${field('Kön', a.sex === 'K' ? 'Kviga/Ko' : 'Tjur')}
     ${field('Ras', a.breed)}
-    ${field('Mor', a.mother
-      ? `<span class="mother-link" data-id="${a.mother}">${byId[a.mother] ? byId[a.mother].short_id : a.mother}</span>`
-      : '<em>Okänd / ej i databas</em>')}
-    ${a.serving ? field('Betäckt', servingText(a.serving)) : ''}
+    ${field('Mor', a.mother ? link(a.mother) : '<em>Okänd / ej i databas</em>')}
+    ${a.fathers.length ? field('Far', a.fathers.map(link).join(' eller ')) : ''}
+    ${a.serving ? field('Betäckt', servingText(a.serving, link)) : ''}
     ${a.missed_calvings.length ? field('Ej kalvat', a.missed_calvings.map(m => `Med tjur ${m.from} – ${m.until}, ingen kalv till ${m.due}.`).join('<br>')) : ''}
     ${a.organic_from ? field('Ekologisk', `Konventionell, blir ekologisk ${a.organic_from}.`) : ''}
     ${a.purchase_date ? field('Köpdatum', a.purchase_date + (a.purchase_from ? ` (från ${a.purchase_from})` : '')) : ''}

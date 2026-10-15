@@ -165,11 +165,14 @@ export function analyzeHerd(snapshots, config, today) {
   // together with a bull >= 6 months. She stays served until she calves.
   const served = new Set();
   const servedDates = new Map();
+  // The bulls >= 6 months at the pasture, per extract date.
+  const bullsAt = new Map();
   if (summerPasture) {
     for (const snap of snaps) {
       const atPasture = snap.animals.filter(a => a.location === summerPasture);
-      const hasBull = atPasture.some(a => a.sex === 'T' && calendarMonths(a.birth, snap.date) >= 6);
-      if (!hasBull) continue;
+      const bulls = atPasture.filter(a => a.sex === 'T' && calendarMonths(a.birth, snap.date) >= 6);
+      if (!bulls.length) continue;
+      bullsAt.set(snap.date, bulls.map(a => a.id));
       for (const a of atPasture) {
         if (a.sex === 'K' && calendarMonths(a.birth, snap.date) >= 14) {
           if (!servedDates.has(a.id)) servedDates.set(a.id, []);
@@ -216,8 +219,12 @@ export function analyzeHerd(snapshots, config, today) {
     while (start > 0 && dates.has(snapDates[start - 1])) start--;
     const from = snapDates[start];
     const earlier = [...dates].filter(d => d < from).sort();
+    const bulls = new Set();
+    for (let i = start; i <= end; i++) for (const bull of bullsAt.get(snapDates[i])) bulls.add(bull);
     servingPeriod.set(id, {
       from,
+      // The bulls she was with, so the coming calf's possible fathers.
+      bulls: [...bulls],
       fromKnown: start > 0,
       until: snapDates[end + 1] ?? null,
       // Cows carry about 283 days.
@@ -252,6 +259,42 @@ export function analyzeHerd(snapshots, config, today) {
       }
     }
     if (missed.length) missedCalvings.set(id, missed);
+  }
+
+  // Fathers: a calf is conceived about 283 days before birth. The bulls at the
+  // pasture during the mother's run of extracts with a bull that covers that day
+  // (give or take 15 days) are the possible fathers, if they were on the farm by
+  // then (bought before it). A run that starts in the very first extract may have
+  // started earlier, but not before the start of that summer's grazing.
+  const runsOf = id => {
+    const dates = new Set(servedDates.get(id) || []);
+    const runs = [];
+    for (let i = 0; i < snapDates.length; i++) {
+      if (!dates.has(snapDates[i]) || dates.has(snapDates[i - 1])) continue;
+      let end = i;
+      while (dates.has(snapDates[end + 1])) end++;
+      runs.push({ start: i, end });
+    }
+    return runs;
+  };
+  const fathers = new Map();
+  for (const a of animals.values()) {
+    if (!a.mother || !servedDates.has(a.mother)) continue;
+    const conceived = addDays(a.birth, -283);
+    const early = addDays(conceived, -15), late = addDays(conceived, 15);
+    const candidates = new Set();
+    for (const { start, end } of runsOf(a.mother)) {
+      const from = start > 0 ? snapDates[start] : addMonths(snapDates[0], -3);
+      const until = snapDates[end + 1] ?? today;
+      if (from > late || until < early) continue;
+      for (let i = start; i <= end; i++) {
+        for (const bull of bullsAt.get(snapDates[i])) {
+          const bought = animals.get(bull).purchase_date;
+          if (!bought || bought <= late) candidates.add(bull);
+        }
+      }
+    }
+    if (candidates.size) fathers.set(a.id, [...candidates]);
   }
 
   // Organic conversion: born after the conversion date (or purchase date for
@@ -292,6 +335,7 @@ export function analyzeHerd(snapshots, config, today) {
       sex: a.sex,
       breed: a.breed,
       mother: a.mother,
+      fathers: fathers.get(a.id) ?? [],
       age_months: ageMonths,
       age_str: ageString(ageMonths),
       removed: removed.has(a.id),

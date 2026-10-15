@@ -137,7 +137,8 @@ async function layout(d) {
 function svgData(svg) {
   return 'data:image/svg+xml,' + encodeURIComponent(svg);
 }
-const STAR_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><polygon points="14,1 18,10 28,10 20,16 23,26 14,21 5,26 8,16 0,10 10,10" fill="#e67e22" stroke="#8a4a10" stroke-width="1"/></svg>');
+// A calf for served females (expecting one).
+const CALF_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24" viewBox="0 0 32 24"><g fill="#e67e22" stroke="#8a4a10" stroke-width="0.8" stroke-linejoin="round"><path d="M6 10 Q4 13 4.5 16" fill="none" stroke-width="1.2" stroke-linecap="round"/><rect x="9" y="15" width="2.2" height="7.5" rx="1"/><rect x="12.5" y="15" width="2.2" height="7.5" rx="1"/><rect x="18" y="15" width="2.2" height="7.5" rx="1"/><rect x="21.5" y="15" width="2.2" height="7.5" rx="1"/><path d="M8 11 Q8 8 11 8 L21 8 Q23 8 24 6 L25 4 Q27 2.5 29.5 4 L30.5 7 Q31 9 29 9.5 L26.5 9.5 Q25 11 24.5 13 Q24 16.5 21 16.5 L11 16.5 Q8 16.5 8 13 Z"/><path d="M25.6 4.6 Q22.6 3 21.8 5 Q23.8 6.4 25.6 5.8 Z"/></g><circle cx="27.6" cy="5.6" r="0.7" fill="#3b1d05"/></svg>');
 const CROSS_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><line x1="4" y1="4" x2="24" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/><line x1="24" y1="4" x2="4" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/></svg>');
 const SELL_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text x="4" y="23" font-family="sans-serif" font-size="24" font-weight="bold" fill="#2980b9">$</text></svg>');
 
@@ -164,17 +165,17 @@ function nameImg(name) {
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="22"><rect x="1" y="1" width="${w - 2}" height="20" rx="4" fill="#fff" stroke="#888" stroke-width="1"/><text x="${w / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#222">${esc(name)}</text></svg>`);
 }
 
-// Corner markers: yellow tag = missing ear tag (top right), star = served (bottom
+// Corner markers: yellow tag = missing ear tag (top right), calf = served (bottom
 // right) with black crosses for missed calvings to its left, cross = slaughter,
 // $ = sell, name label at the bottom left.
 function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
-  if (a.served) marks.push({ img: STAR_IMG, w: '28px', h: '28px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
+  if (a.served) marks.push({ img: CALF_IMG, w: '32px', h: '24px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
   const missed = a.missed_calvings.length;
-  if (missed) marks.push({ img: missedImg(missed), w: `${missed * 20}px`, h: '20px', x: '100%', y: '100%', ox: '-22px', oy: '2px' });
+  if (missed) marks.push({ img: missedImg(missed), w: `${missed * 20}px`, h: '20px', x: '100%', y: '100%', ox: '-26px', oy: '4px' });
   const tags = note.tags_missing;
   if (tags) marks.push({ img: TAG_IMG[tags], w: tags === 2 ? '36px' : '22px', h: '28px', x: '100%', y: '0%', ox: '6px', oy: '-6px' });
   if (note.name) marks.push({ img: nameImg(note.name), w: 'auto', h: '22px', x: '0%', y: '100%', ox: '-4px', oy: '8px' });

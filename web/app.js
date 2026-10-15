@@ -104,10 +104,34 @@ async function fetchNamedays(dates) {
 
 // --- Drawing ---
 
+// Tree direction: years top to bottom (TB) or left to right (LR). "auto" picks LR
+// when the drawing area is taller than wide, as on a phone held upright.
+const DIRECTION_KEY = 'kotradet.direction';
+let directionSetting = 'auto';
+try { directionSetting = localStorage.getItem(DIRECTION_KEY) || 'auto'; } catch { /* storage blocked */ }
+let drawnDirection = null;
+
+function direction() {
+  if (directionSetting !== 'auto') return directionSetting;
+  const wrap = $('graph-wrap');
+  return wrap.clientHeight > wrap.clientWidth ? 'LR' : 'TB';
+}
+
+$('flip-button').addEventListener('click', () => {
+  directionSetting = direction() === 'TB' ? 'LR' : 'TB';
+  try { localStorage.setItem(DIRECTION_KEY, directionSetting); } catch { /* storage blocked */ }
+  render();
+});
+
+new ResizeObserver(() => {
+  if (data && drawnDirection && direction() !== drawnDirection) render();
+}).observe($('graph-wrap'));
+
 let graphviz = null;
 async function layout(d) {
   graphviz ??= await Graphviz.load();
-  return plainPositions(graphviz.layout(herdToDot(d), 'plain', 'dot'));
+  drawnDirection = direction();
+  return plainPositions(graphviz.layout(herdToDot(d, drawnDirection), 'plain', 'dot'));
 }
 
 function svgData(svg) {
@@ -117,18 +141,40 @@ const STAR_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" hei
 const CROSS_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><line x1="4" y1="4" x2="24" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/><line x1="24" y1="4" x2="4" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/></svg>');
 const SELL_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text x="4" y="23" font-family="sans-serif" font-size="24" font-weight="bold" fill="#2980b9">$</text></svg>');
 
+// Swedish cattle wear a yellow ear tag in each ear; one tag per missing one.
+const TAG_SHAPE = 'd="M7 1h8a3 3 0 0 1 3 3v6l3 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V14l3-4V4a3 3 0 0 1 3-3z" fill="#f4d03f" stroke="#9a7d0a" stroke-width="1.5"';
+const TAG_HOLE = 'r="2" fill="#fff" stroke="#9a7d0a" stroke-width="1"';
+const TAG_IMG = {
+  1: svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="22" height="28"><path ${TAG_SHAPE}/><circle cx="11" cy="6" ${TAG_HOLE}/></svg>`),
+  2: svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="28"><path ${TAG_SHAPE}/><circle cx="11" cy="6" ${TAG_HOLE}/><path transform="translate(14 0)" ${TAG_SHAPE}/><circle cx="25" cy="6" ${TAG_HOLE}/></svg>`),
+};
+
+// One black cross per missed calving, in a row above the box.
+function missedImg(count) {
+  const crosses = Array.from({ length: count }, (_, i) => {
+    const x = i * 20;
+    return `<path d="M${x + 4} 4L${x + 16} 16M${x + 16} 4L${x + 4} 16" stroke="#111" stroke-width="3" stroke-linecap="round"/>`;
+  }).join('');
+  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${count * 20}" height="20">${crosses}</svg>`);
+}
+
 function nameImg(name) {
   const w = name.length * 10 + 4;
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="20"><text x="2" y="15" font-family="sans-serif" font-size="14" font-weight="bold" fill="#333">${esc(name)}</text></svg>`);
 }
 
-// Corner markers: star = served, cross = slaughter, $ = sell, name below.
+// Corner markers: star = served, cross = slaughter, $ = sell, yellow tag = missing
+// ear tag, black crosses above = missed calvings, name below.
 function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
   if (a.served) corner(STAR_IMG, '100%', '6px');
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
+  const missed = a.missed_calvings.length;
+  if (missed) marks.push({ img: missedImg(missed), w: `${missed * 20}px`, h: '20px', x: '50%', y: '0%', ox: '0px', oy: '-22px' });
+  const tags = note.tags_missing;
+  if (tags) marks.push({ img: TAG_IMG[tags], w: tags === 2 ? '36px' : '22px', h: '28px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
   if (note.name) marks.push({ img: nameImg(note.name), w: 'auto', h: '20px', x: '0%', y: '100%', ox: '-2px', oy: '4px' });
   if (!marks.length) return { 'background-image': 'none' };
   return {
@@ -141,7 +187,7 @@ function markerStyle(a, note) {
     'background-offset-y': marks.map(m => m.oy),
     'background-image-containment': marks.map(() => 'over'),
     'background-clip': marks.map(() => 'none'),
-    'bounds-expansion': '10px',
+    'bounds-expansion': '26px',
   };
 }
 
@@ -180,7 +226,7 @@ async function render() {
       group: 'nodes',
       data: {
         id: a.id,
-        label: `${a.short_id}  ${a.age_str}${a.failed ? ' ✗' : ''}\n${a.birth}`,
+        label: `${a.short_id}  ${a.age_str}\n${a.birth}`,
         bg: c.bg,
         border: c.border,
         borderWidth: a.conventional ? 4 : 1.5,
@@ -223,6 +269,7 @@ async function render() {
     maxZoom: 3,
   });
   cy.on('tap', 'node', evt => showAnimal(evt.target.id()));
+  cy.on('tap', evt => { if (evt.target === cy) showEmptyPanel(); });
   window.kotradCy = cy; // for debugging in the console
 
   if (selectedId && data.animals.some(a => a.id === selectedId)) {
@@ -295,10 +342,12 @@ function showAnimal(id) {
   if (a.removed) tags += '<span class="tag tag-removed">Borta</span>';
   if (note.slaughter) tags += '<span class="tag tag-slaughter">Slakt</span>';
   if (note.sell) tags += '<span class="tag tag-sell">Sälj</span>';
+  if (note.tags_missing) tags += `<span class="tag tag-eartag">Saknar ${note.tags_missing === 2 ? 'båda öronmärkena' : 'ett öronmärke'}</span>`;
 
   const panel = $('panel');
   panel.className = '';
   panel.innerHTML = `
+    <button id="panel-close" title="Stäng">&times;</button>
     <h2>${a.id.replace(/^SE/, 'SE ')}</h2>
     <div style="margin-bottom:12px">${tags}</div>
     ${field('Kort ID', a.short_id)}
@@ -310,6 +359,7 @@ function showAnimal(id) {
       ? `<span class="mother-link" data-id="${a.mother}">${byId[a.mother] ? byId[a.mother].short_id : a.mother}</span>`
       : '<em>Okänd / ej i databas</em>')}
     ${a.serving ? field('Betäckt', servingText(a.serving)) : ''}
+    ${a.missed_calvings.length ? field('Ej kalvat', a.missed_calvings.map(m => `Med tjur ${m.from} – ${m.until}, ingen kalv till ${m.due}.`).join('<br>')) : ''}
     ${a.organic_from ? field('Ekologisk', `Konventionell, blir ekologisk ${a.organic_from}.`) : ''}
     ${a.purchase_date ? field('Köpdatum', a.purchase_date + (a.purchase_from ? ` (från ${a.purchase_from})` : '')) : ''}
     ${animalList('Kalvar', calves)}
@@ -333,6 +383,14 @@ function showAnimal(id) {
         </div>
       </div>
       <div class="note-field">
+        <label for="note-tags">Öronmärken</label>
+        <select id="note-tags">
+          <option value="0">Båda sitter i</option>
+          <option value="1" ${note.tags_missing === 1 ? 'selected' : ''}>Ett saknas</option>
+          <option value="2" ${note.tags_missing === 2 ? 'selected' : ''}>Båda saknas</option>
+        </select>
+      </div>
+      <div class="note-field">
         <label for="note-comment">Kommentar</label>
         <textarea id="note-comment" placeholder="Fritext...">${esc(note.comment)}</textarea>
       </div>
@@ -346,7 +404,9 @@ function showAnimal(id) {
       sell: $('note-sell').checked,
       comment: $('note-comment').value.trim(),
     };
-    if (!n.name && !n.slaughter && !n.sell && !n.comment) delete herd.notes[id];
+    const tagsMissing = Number($('note-tags').value);
+    if (tagsMissing) n.tags_missing = tagsMissing;
+    if (!n.name && !n.slaughter && !n.sell && !n.comment && !n.tags_missing) delete herd.notes[id];
     else herd.notes[id] = n;
     cy.getElementById(id).style(markerStyle(a, n));
     changed();
@@ -355,6 +415,11 @@ function showAnimal(id) {
   $('note-comment').addEventListener('input', saveNote);
   $('note-slaughter').addEventListener('change', saveNote);
   $('note-sell').addEventListener('change', saveNote);
+  $('note-tags').addEventListener('change', () => { saveNote(); showAnimal(id); });
+  $('panel-close').addEventListener('click', () => {
+    cy.$(':selected').unselect();
+    showEmptyPanel();
+  });
   panel.querySelectorAll('[data-id]').forEach(el => el.addEventListener('click', () => selectAnimal(el.dataset.id)));
 }
 

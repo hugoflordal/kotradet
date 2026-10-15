@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.33.1/cytoscape.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 #header {
   background: #fff; padding: 12px 24px; border-bottom: 1px solid #ddd;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
@@ -26,7 +26,7 @@ button, .button {
 }
 button.primary, .button.primary { background: #1565c0; color: #fff; border-color: #1565c0; }
 #save-status { font-size: 0.75em; color: #888; }
-#container { display: flex; height: calc(100vh - 62px); }
+#container { display: flex; flex: 1; min-height: 0; }
 #graph-wrap { flex: 1; position: relative; }
 #graph { position: absolute; inset: 0; }
 #welcome {
@@ -45,6 +45,8 @@ body.logged-out #actions > :not(#save-status) { display: none; }
   width: 320px; background: #fff; border-left: 1px solid #ddd;
   padding: 20px; overflow-y: auto;
 }
+#panel { position: relative; }
+#panel-close { position: absolute; top: 8px; right: 8px; border: none; font-size: 1.6em; line-height: 1; padding: 2px 8px; background: none; color: #888; }
 #panel.empty { display: flex; align-items: center; justify-content: center; color: #999; }
 #panel h2 { font-size: 1.1em; margin-bottom: 12px; color: #333; }
 #panel .field { margin-bottom: 10px; }
@@ -67,6 +69,9 @@ body.logged-out #actions > :not(#save-status) { display: none; }
 .tag-conventional { background: #f5c6cb; color: #721c24; }
 .tag-slaughter { background: #c0392b; color: #fff; }
 .tag-sell { background: #2980b9; color: #fff; }
+.tag-eartag { background: #f4d03f; color: #5c4a06; }
+.note-field select { padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font: inherit; font-size: 0.9em; background: #fff; }
+#legend-button { display: none; }
 .notes-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid #ddd; }
 .notes-section h3 { font-size: 0.9em; margin-bottom: 10px; color: #555; }
 .note-field { margin-bottom: 10px; }
@@ -86,15 +91,27 @@ dialog { border: 1px solid #ccc; border-radius: 8px; padding: 20px; width: min(4
 dialog h2 { font-size: 1.1em; margin-bottom: 14px; }
 dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 @media (max-width: 760px) {
-  #container { flex-direction: column; height: auto; }
-  #graph-wrap { height: 70vh; flex: none; }
-  #panel { width: 100%; border-left: none; border-top: 1px solid #ddd; }
+  #header { padding: 8px 12px; gap: 8px; }
+  #header h1 { font-size: 1.1em; }
+  #stats { display: none; }
+  #legend { display: none; order: 3; width: 100%; }
+  body.show-legend #legend { display: flex; }
+  #legend-button { display: inline-block; }
+  #actions { margin-left: 0; }
+  #account-email, #print-button { display: none; }
+  /* The animal card slides up over the tree instead of sitting below it. */
+  #panel {
+    position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 60dvh;
+    border-left: none; border-top: 1px solid #ccc; border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15); padding: 16px; z-index: 20;
+  }
+  #panel.empty { display: none; }
 }
 @media print {
   #header, #panel { display: none !important; }
   #container { height: auto !important; }
   #graph-wrap { width: 100% !important; height: 100vh !important; }
-  body { background: #fff; }
+  body { background: #fff; display: block; height: auto; }
 }
 </style>
 </head>
@@ -114,13 +131,16 @@ dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; mar
     <div class="legend-item"><span class="legend-swatch" style="background:#fff; border: 3px solid #c0392b;"></span> Konventionell</div>
     <div class="legend-item"><span class="legend-mark" style="color:red;">&#x2715;</span> Slakt</div>
     <div class="legend-item"><span class="legend-mark" style="color:#2980b9;">$</span> Sälj</div>
+    <div class="legend-item"><svg width="13" height="16" viewBox="0 0 22 28"><path d="M7 1h8a3 3 0 0 1 3 3v6l3 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V14l3-4V4a3 3 0 0 1 3-3z" fill="#f4d03f" stroke="#9a7d0a" stroke-width="1.5"/><circle cx="11" cy="6" r="2" fill="#fff" stroke="#9a7d0a"/></svg> Saknar öronmärke</div>
   </div>
   <div id="actions">
     <label class="button primary" title="Läs in utdrag (Djurinnehav) från CDB som PDF">
       Läs in PDF<input type="file" id="pdf-input" accept="application/pdf,.pdf" multiple hidden>
     </label>
+    <button id="legend-button" onclick="document.body.classList.toggle('show-legend')">Förklaring</button>
+    <button id="flip-button" title="Visa åren uppifrån och ner eller från vänster till höger">Vänd träd</button>
     <button id="settings-button">Inställningar</button>
-    <button onclick="window.print()" title="Skriv ut trädet">Skriv ut</button>
+    <button id="print-button" onclick="window.print()" title="Skriv ut trädet">Skriv ut</button>
     <span id="save-status"></span>
     <span id="account" hidden><span id="account-email" class="hint"></span> <button id="logout">Logga ut</button></span>
   </div>

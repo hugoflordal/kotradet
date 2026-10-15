@@ -27,6 +27,14 @@ export function addDays(s, days) {
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
+// The same day n months later, or the month's last day if it is shorter.
+function addMonths(s, n) {
+  const { y, m, d } = parseDate(s);
+  const total = y * 12 + (m - 1) + n;
+  const ny = Math.floor(total / 12), nm = total % 12 + 1;
+  return `${ny}-${String(nm).padStart(2, '0')}-${String(Math.min(d, daysInMonth(ny, nm))).padStart(2, '0')}`;
+}
+
 // Month difference ignoring the day of month.
 function calendarMonths(from, to) {
   const a = parseDate(from), b = parseDate(to);
@@ -219,6 +227,33 @@ export function analyzeHerd(snapshots, config, today) {
     });
   }
 
+  // Missed calvings: each unbroken run of extracts with her and a bull at the
+  // pasture is one chance. The extract after the run is the last day she can have
+  // been served; with no calf within 10 months of that, the chance was missed.
+  // The run must have ended (a later extract exists).
+  const lastSeen = new Map();
+  for (const snap of snaps) for (const a of snap.animals) lastSeen.set(a.id, snap.date);
+  const missedCalvings = new Map();
+  for (const [id, list] of servedDates) {
+    const dates = new Set(list);
+    const calves = calvesOf(id);
+    const missed = [];
+    for (let i = 0; i < snapDates.length; i++) {
+      if (!dates.has(snapDates[i]) || dates.has(snapDates[i - 1])) continue;
+      let end = i;
+      while (dates.has(snapDates[end + 1])) end++;
+      const until = snapDates[end + 1];
+      if (!until) break;
+      const due = addMonths(until, 10);
+      // Gone from the herd before the due date: we cannot know.
+      if (removed.has(id) && lastSeen.get(id) < due) continue;
+      if (due < today && !calves.some(c => c > snapDates[i] && c <= due)) {
+        missed.push({ from: snapDates[i], until, due });
+      }
+    }
+    if (missed.length) missedCalvings.set(id, missed);
+  }
+
   // Organic conversion: born after the conversion date (or purchase date for
   // bought animals) is organic; older animals need max(12 months, 3/4 of their
   // age at conversion) on the farm.
@@ -265,6 +300,7 @@ export function analyzeHerd(snapshots, config, today) {
       conventional: conventional.has(a.id),
       serving: servingPeriod.get(a.id) ?? null,
       organic_from: organicFrom.get(a.id) ?? null,
+      missed_calvings: missedCalvings.get(a.id) ?? [],
       purchase_date: a.purchase_date,
       purchase_from: a.purchase_from,
     };
@@ -287,22 +323,23 @@ function dotString(s) {
   return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
 }
 
-// Graphviz source for the tree: one rank per birth year, oldest at the top,
-// mother -> calf edges. Graphviz in the browser has no font metrics, so node
-// sizes are given explicitly to fit the drawn label (24px monospace, two lines).
-export function herdToDot(data) {
+// Graphviz source for the tree: one rank per birth year, oldest first (at the top
+// for direction TB, to the left for LR), mother -> calf edges. Graphviz in the
+// browser has no font metrics, so node sizes are given explicitly to fit the drawn
+// label (24px monospace, two lines).
+export function herdToDot(data, direction = 'TB') {
   const byYear = new Map();
   for (const a of data.animals) {
     if (!byYear.has(a.year)) byYear.set(a.year, []);
     byYear.get(a.year).push(a);
   }
   const years = [...byYear.keys()].sort((a, b) => a - b);
-  const out = ['digraph {', '  rankdir=TB'];
+  const out = ['digraph {', `  rankdir=${direction === 'LR' ? 'LR' : 'TB'}`];
   for (const year of years) {
     out.push(`  dummy_${year} [label="" shape=point width=0.01 height=0.01 style=invisible]`);
     out.push('  {', '    rank=same', `    dummy_${year}`);
     for (const a of byYear.get(year)) {
-      const first = `${a.short_id} ${a.age_str}${a.failed ? ' x' : ''}`;
+      const first = `${a.short_id} ${a.age_str}`;
       const label = a.removed
         ? `<<s>${first}<br/>${a.birth}</s>>`
         : `"${first}\\n${a.birth}"`;

@@ -188,6 +188,8 @@ function cowImg(c) {
     + `${face}<circle cx="35.8" cy="5.6" r="0.8" fill="${c.eye}"/></svg>`);
 }
 const COW_IMG = Object.fromEntries(Object.entries(COLORS).map(([key, c]) => [key, cowImg(c)]));
+// Animals without a chosen colour are Hereford red; only other colours are stored.
+const DEFAULT_COLOR = 'hereford';
 
 // Corner markers: yellow tag = missing ear tag (top right), calf = served (bottom
 // right) with black crosses for missed calvings to its left, coat colour cow (top
@@ -197,7 +199,7 @@ function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
   if (a.served) marks.push({ img: CALF_IMG, w: '32px', h: '24px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
-  if (COW_IMG[note.color]) marks.push({ img: COW_IMG[note.color], w: '40px', h: '28px', x: '0%', y: '0%', ox: '-8px', oy: '-10px' });
+  marks.push({ img: COW_IMG[note.color] ?? COW_IMG[DEFAULT_COLOR], w: '40px', h: '28px', x: '0%', y: '0%', ox: '-8px', oy: '-10px' });
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
   const missed = a.missed_calvings.length;
@@ -414,8 +416,7 @@ function showAnimal(id) {
       <div class="note-field">
         <label for="note-color">Färg</label>
         <select id="note-color">
-          <option value="">Okänd</option>
-          ${Object.entries(COLORS).map(([key, c]) => `<option value="${key}" ${note.color === key ? 'selected' : ''}>${c.label}</option>`).join('')}
+          ${Object.entries(COLORS).map(([key, c]) => `<option value="${key}" ${(note.color || DEFAULT_COLOR) === key ? 'selected' : ''}>${c.label}</option>`).join('')}
         </select>
       </div>
       <div class="note-field">
@@ -440,7 +441,7 @@ function showAnimal(id) {
       sell: $('note-sell').checked,
       comment: $('note-comment').value.trim(),
     };
-    if ($('note-color').value) n.color = $('note-color').value;
+    if ($('note-color').value !== DEFAULT_COLOR) n.color = $('note-color').value;
     const tagsMissing = Number($('note-tags').value);
     if (tagsMissing) n.tags_missing = tagsMissing;
     if (!n.name && !n.slaughter && !n.sell && !n.comment && !n.tags_missing && !n.color) delete herd.notes[id];

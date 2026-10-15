@@ -137,8 +137,6 @@ async function layout(d) {
 function svgData(svg) {
   return 'data:image/svg+xml,' + encodeURIComponent(svg);
 }
-// A Hereford calf (red with a white face) for served females, who expect one.
-const CALF_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24" viewBox="0 0 32 24"><g fill="#9b3412" stroke="#4a160a" stroke-width="0.8" stroke-linejoin="round"><path d="M6 10 Q4 13 4.5 16" fill="none" stroke-width="1.2" stroke-linecap="round"/><rect x="9" y="15" width="2.2" height="7.5" rx="1"/><rect x="12.5" y="15" width="2.2" height="7.5" rx="1"/><rect x="18" y="15" width="2.2" height="7.5" rx="1"/><rect x="21.5" y="15" width="2.2" height="7.5" rx="1"/><path d="M8 11 Q8 8 11 8 L21 8 Q23 8 24 6 L25 4 Q27 2.5 29.5 4 L30.5 7 Q31 9 29 9.5 L26.5 9.5 Q25 11 24.5 13 Q24 16.5 21 16.5 L11 16.5 Q8 16.5 8 13 Z"/><path d="M25.6 4.6 Q22.6 3 21.8 5 Q23.8 6.4 25.6 5.8 Z"/></g><path d="M26.6 4 Q28.6 3 29.6 4.4 L30.4 7 Q30.7 8.7 29.2 9 L27.6 9 Q26.4 6.5 26.6 4 Z" fill="#fff"/><circle cx="27.6" cy="5.6" r="0.7" fill="#2a0e05"/></svg>');
 const CROSS_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><line x1="4" y1="4" x2="24" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/><line x1="24" y1="4" x2="4" y2="24" stroke="red" stroke-width="4" stroke-linecap="round"/></svg>');
 const SELL_IMG = svgData('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"><text x="4" y="23" font-family="sans-serif" font-size="24" font-weight="bold" fill="#2980b9">$</text></svg>');
 
@@ -165,17 +163,16 @@ function nameImg(name) {
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="22"><rect x="1" y="1" width="${w - 2}" height="20" rx="4" fill="#fff" stroke="#888" stroke-width="1"/><text x="${w / 2}" y="16" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#222">${esc(name)}</text></svg>`);
 }
 
-// Coat colours, each drawn as a small cow (larger than the served calf): coat,
-// udder, eye, and the Hereford's white face.
+// Coat colours. Every animal has a white face. Each is drawn as a small cow in
+// the top left corner, and served females get a calf of their own colour.
 const COLORS = {
-  svart: { label: 'Svart', coat: '#1b1b1b', eye: '#ddd' },
-  gra: { label: 'Grå', coat: '#8e8e8e', eye: '#222' },
-  ljusbrun: { label: 'Ljusbrun', coat: '#c8955c', eye: '#222' },
-  hereford: { label: 'Hereford-röd', coat: '#9b3412', eye: '#222', face: '#fff' },
+  svart: { label: 'Svart', coat: '#1b1b1b' },
+  gra: { label: 'Grå', coat: '#8e8e8e' },
+  ljusbrun: { label: 'Ljusbrun', coat: '#c8955c' },
+  hereford: { label: 'Hereford-röd', coat: '#9b3412' },
 };
 
 function cowImg(c) {
-  const face = c.face ? `<path d="M34.4 3.4 Q36.6 2.6 37.6 4 L38.6 7.8 Q38.9 9.8 37 10 L35.4 10 Q34 7 34.4 3.4 Z" fill="${c.face}"/>` : '';
   return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="28" viewBox="0 0 40 28">`
     + `<path d="M33 3.6 Q33.2 1.2 31.6 0.8" fill="none" stroke="#eee" stroke-width="1.2" stroke-linecap="round"/>`
     + `<g fill="${c.coat}" stroke="#222" stroke-width="0.8" stroke-linejoin="round">`
@@ -185,9 +182,23 @@ function cowImg(c) {
     + `<path d="M7 10 Q7 6 11 6 L28 6 Q30 6 31 5 L32 3.5 Q34.5 2 37.5 3.5 L39 7.5 Q39.5 10 37 10.5 L34 10.5 Q32.5 12 32 15 Q31.5 20 27 20 L11 20 Q7 20 7 16 Z"/>`
     + `<path d="M33.5 4.5 Q30.5 3 29.8 5 Q31.8 6.4 33.5 5.8 Z"/></g>`
     + `<ellipse cx="21" cy="20.6" rx="2.6" ry="1.6" fill="#e9a3a3" stroke="#222" stroke-width="0.6"/>`
-    + `${face}<circle cx="35.8" cy="5.6" r="0.8" fill="${c.eye}"/></svg>`);
+    + `<path d="M34.4 3.4 Q36.6 2.6 37.6 4 L38.6 7.8 Q38.9 9.8 37 10 L35.4 10 Q34 7 34.4 3.4 Z" fill="#fff"/>`
+    + `<circle cx="35.8" cy="5.6" r="0.8" fill="#222"/></svg>`);
+}
+
+function calfImg(c) {
+  return svgData(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24" viewBox="0 0 32 24">`
+    + `<g fill="${c.coat}" stroke="#222" stroke-width="0.8" stroke-linejoin="round">`
+    + `<path d="M6 10 Q4 13 4.5 16" fill="none" stroke="${c.coat}" stroke-width="1.2" stroke-linecap="round"/>`
+    + `<rect x="9" y="15" width="2.2" height="7.5" rx="1"/><rect x="12.5" y="15" width="2.2" height="7.5" rx="1"/>`
+    + `<rect x="18" y="15" width="2.2" height="7.5" rx="1"/><rect x="21.5" y="15" width="2.2" height="7.5" rx="1"/>`
+    + `<path d="M8 11 Q8 8 11 8 L21 8 Q23 8 24 6 L25 4 Q27 2.5 29.5 4 L30.5 7 Q31 9 29 9.5 L26.5 9.5 Q25 11 24.5 13 Q24 16.5 21 16.5 L11 16.5 Q8 16.5 8 13 Z"/>`
+    + `<path d="M25.6 4.6 Q22.6 3 21.8 5 Q23.8 6.4 25.6 5.8 Z"/></g>`
+    + `<path d="M26.6 4 Q28.6 3 29.6 4.4 L30.4 7 Q30.7 8.7 29.2 9 L27.6 9 Q26.4 6.5 26.6 4 Z" fill="#fff"/>`
+    + `<circle cx="27.6" cy="5.6" r="0.7" fill="#222"/></svg>`);
 }
 const COW_IMG = Object.fromEntries(Object.entries(COLORS).map(([key, c]) => [key, cowImg(c)]));
+const CALF_IMG = Object.fromEntries(Object.entries(COLORS).map(([key, c]) => [key, calfImg(c)]));
 // Animals without a chosen colour are Hereford red; only other colours are stored.
 const DEFAULT_COLOR = 'hereford';
 
@@ -198,8 +209,9 @@ const DEFAULT_COLOR = 'hereford';
 function markerStyle(a, note) {
   const marks = [];
   const corner = (img, x, ox) => marks.push({ img, w: '28px', h: '28px', x, y: '0%', ox, oy: '-6px' });
-  if (a.served) marks.push({ img: CALF_IMG, w: '32px', h: '24px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
-  marks.push({ img: COW_IMG[note.color] ?? COW_IMG[DEFAULT_COLOR], w: '40px', h: '28px', x: '0%', y: '0%', ox: '-8px', oy: '-10px' });
+  const color = COLORS[note.color] ? note.color : DEFAULT_COLOR;
+  if (a.served) marks.push({ img: CALF_IMG[color], w: '32px', h: '24px', x: '100%', y: '100%', ox: '6px', oy: '6px' });
+  marks.push({ img: COW_IMG[color], w: '40px', h: '28px', x: '0%', y: '0%', ox: '-8px', oy: '-10px' });
   if (note.slaughter) corner(CROSS_IMG, '0%', '-6px');
   if (note.sell) corner(SELL_IMG, '0%', '-6px');
   const missed = a.missed_calvings.length;

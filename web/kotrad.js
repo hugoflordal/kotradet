@@ -127,6 +127,13 @@ export function parseSnapshot(lines, filename) {
 // --- Herd analysis ---
 
 // snapshots: [{date, animals}], config: {summer_pasture, eco_date}, today: YYYY-MM-DD.
+// Heifers can come into heat, and be served, from about 9 months. They are only
+// meant to be served at around 14 months, so a younger heifer with a bull is the
+// one to watch.
+const HEIFER_FERTILE_MONTHS = 9;
+// From this age she is meant to be served, so no calf afterwards counts as a miss.
+const BREEDING_MONTHS = 14;
+
 export function analyzeHerd(snapshots, config, today) {
   const snaps = snapshots.filter(s => s.date).slice().sort((a, b) => a.date.localeCompare(b.date));
   const summerPasture = config.summer_pasture || null;
@@ -161,7 +168,7 @@ export function analyzeHerd(snapshots, config, today) {
   }
   const calvesOf = id => calvesByMother.get(id) || [];
 
-  // Served: in some extract a female >= 14 months was at the summer pasture
+  // Served: in some extract a female >= 9 months was at the summer pasture
   // together with a bull >= 6 months. She stays served until she calves.
   const served = new Set();
   const servedDates = new Map();
@@ -174,7 +181,7 @@ export function analyzeHerd(snapshots, config, today) {
       if (!bulls.length) continue;
       bullsAt.set(snap.date, bulls.map(a => a.id));
       for (const a of atPasture) {
-        if (a.sex === 'K' && calendarMonths(a.birth, snap.date) >= 14) {
+        if (a.sex === 'K' && calendarMonths(a.birth, snap.date) >= HEIFER_FERTILE_MONTHS) {
           if (!servedDates.has(a.id)) servedDates.set(a.id, []);
           servedDates.get(a.id).push(snap.date);
           served.add(a.id);
@@ -197,7 +204,8 @@ export function analyzeHerd(snapshots, config, today) {
     if (!latest) continue;
     const elapsed = calendarMonths(latest, today);
     if (elapsed >= 11) expired.add(id);
-    else if (elapsed >= 10) failed.add(id);
+    // Only a female old enough to be meant for breeding has failed.
+    else if (elapsed >= 10 && calendarMonths(animals.get(id).birth, latest) >= BREEDING_MONTHS) failed.add(id);
   }
   for (const id of expired) served.delete(id);
 
@@ -251,6 +259,7 @@ export function analyzeHerd(snapshots, config, today) {
       while (dates.has(snapDates[end + 1])) end++;
       const until = snapDates[end + 1];
       if (!until) break;
+      if (calendarMonths(animals.get(id).birth, snapDates[end]) < BREEDING_MONTHS) continue;
       const due = addMonths(until, 10);
       // Gone from the herd before the due date: we cannot know.
       if (removed.has(id) && lastSeen.get(id) < due) continue;

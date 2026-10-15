@@ -14,7 +14,7 @@ när djur föds, köps, säljs eller flyttas till eller från bete. Koträdet l�
 mor, ordnat efter födelseår. Genom att jämföra utdragen över tid räknar det ut:
 
 - **Borta:** djur som har försvunnit ur besättningen (sålda, slaktade eller döda).
-- **Betäckt:** kor och kvigor från 14 månader som har gått på sommarbetet samtidigt
+- **Betäckt:** kor och kvigor från 9 månader som har gått på sommarbetet samtidigt
   som en tjur från 6 månader, med betesperiod, tjur och tidigaste kalvning.
 - **Ej kalvat:** ett svart kryss för varje betesperiod med tjur som inte gav någon
   kalv inom 10 månader.

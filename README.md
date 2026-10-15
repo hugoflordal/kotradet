@@ -7,9 +7,10 @@ centrala djurdatabas). Öppna det på <https://proverhugo.github.io/kotradet/>.
 
 *Skärmbilden visar en påhittad besättning.*
 
-Man hämtar utdraget *Djurinnehav* som PDF från CDB varje gång något ändras i
-besättningen, till exempel när djur föds, köps, säljs eller flyttas till eller från
-bete. Koträdet läser in utdragen och ritar ett träd där varje djur sitter under sin
+CDB har inget API, så det enda sättet för ett program att komma åt uppgifterna är
+genom de utdrag som djurhållaren själv kan ladda ned. Man hämtar därför utdraget
+*Djurinnehav* som PDF från CDB varje gång något ändras i besättningen, till exempel
+när djur föds, köps, säljs eller flyttas till eller från bete. Koträdet läser in utdragen och ritar ett träd där varje djur sitter under sin
 mor, ordnat efter födelseår. Genom att jämföra utdragen över tid räknar det ut:
 
 - **Borta:** djur som har försvunnit ur besättningen (sålda, slaktade eller döda).

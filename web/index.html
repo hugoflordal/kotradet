@@ -14,7 +14,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; disp
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
 }
 #header h1 { font-size: 1.3em; color: #333; }
-#tagline { font-size: 0.8em; color: #3d5a2a; }
+/* Sloganen på en egen rad under rubriken och knapparna. */
+#tagline { flex-basis: 100%; order: 99; margin-top: -10px; font-size: 0.8em; color: #3d5a2a; }
 #tagline a { color: inherit; }
 .stat { background: #e8f4fd; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: #1a5276; margin-right: 4px; }
 #legend { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 0.8em; }
@@ -121,10 +122,7 @@ dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; mar
 <body>
 
 <div id="header">
-  <div id="brand">
-    <h1 id="title">Koträd</h1>
-    <p id="tagline">Nötbesättningens släktträd – automatiskt uppritat från CDB · av <a href="https://github.com/hugoflordal" target="_blank" rel="noopener">Hugo Flordal</a></p>
-  </div>
+  <h1 id="title">Koträd</h1>
   <div id="stats"></div>
   <div id="legend">
     <div class="legend-item"><span class="legend-swatch" style="background:lightskyblue"></span> Ko/Kviga &ge;14m</div>
@@ -150,6 +148,7 @@ dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; mar
     <span id="save-status"></span>
     <span id="account" hidden><span id="account-email" class="hint"></span> <button id="logout">Logga ut</button></span>
   </div>
+  <p id="tagline">Nötbesättningens släktträd – automatiskt uppritat från CDB · av <a href="https://github.com/hugoflordal" target="_blank" rel="noopener">Hugo Flordal</a></p>
 </div>
 
 <div id="container">

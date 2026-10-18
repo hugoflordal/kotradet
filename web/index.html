@@ -21,7 +21,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; disp
 #tagline a { color: inherit; }
 .stat { background: #e8f4fd; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: #1a5276; margin-right: 4px; }
 #legend { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 0.8em; }
-.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-item { display: flex; align-items: center; gap: 4px; cursor: help; }
 .legend-mark { font-weight: bold; font-size: 1.15em; line-height: 1; width: 16px; text-align: center; }
 .legend-swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #999; display: inline-block; }
 #actions { display: flex; gap: 6px; align-items: center; margin-left: auto; flex-wrap: wrap; }
@@ -128,20 +128,20 @@ dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; mar
   <h1 id="title">Koträd</h1>
   <div id="stats"></div>
   <div id="legend">
-    <div class="legend-item"><span class="legend-swatch" style="background:lightskyblue"></span> Ko/Kviga &ge;14m</div>
-    <div class="legend-item"><span class="legend-swatch" style="background:aliceblue"></span> Kviga &lt;14m</div>
-    <div class="legend-item"><span class="legend-swatch" style="background:lightpink"></span> Tjur &ge;6m</div>
-    <div class="legend-item"><span class="legend-swatch" style="background:mistyrose"></span> Tjur &lt;6m</div>
-    <div class="legend-item"><svg width="21" height="16" viewBox="0 0 32 24"><g fill="#9b3412" stroke="#4a160a" stroke-width="0.8" stroke-linejoin="round"><path d="M6 10 Q4 13 4.5 16" fill="none" stroke-width="1.2" stroke-linecap="round"/><rect x="9" y="15" width="2.2" height="7.5" rx="1"/><rect x="12.5" y="15" width="2.2" height="7.5" rx="1"/><rect x="18" y="15" width="2.2" height="7.5" rx="1"/><rect x="21.5" y="15" width="2.2" height="7.5" rx="1"/><path d="M8 11 Q8 8 11 8 L21 8 Q23 8 24 6 L25 4 Q27 2.5 29.5 4 L30.5 7 Q31 9 29 9.5 L26.5 9.5 Q25 11 24.5 13 Q24 16.5 21 16.5 L11 16.5 Q8 16.5 8 13 Z"/><path d="M25.6 4.6 Q22.6 3 21.8 5 Q23.8 6.4 25.6 5.8 Z"/></g><path d="M26.6 4 Q28.6 3 29.6 4.4 L30.4 7 Q30.7 8.7 29.2 9 L27.6 9 Q26.4 6.5 26.6 4 Z" fill="#fff"/><circle cx="27.6" cy="5.6" r="0.7" fill="#2a0e05"/></svg> Betäckt</div>
-    <div class="legend-item"><span class="legend-mark" style="color:#222;">&#x2717;</span> Ej kalvat</div>
-    <div class="legend-item"><span class="legend-swatch" style="background:#e2e3e5; border-style:dashed;"></span> Borta</div>
-    <div class="legend-item"><span class="legend-swatch" style="background:#fff; border: 3px solid #c0392b;"></span> Konventionell</div>
-    <div class="legend-item"><span class="legend-mark" style="color:red;">&#x2715;</span> Slakt</div>
-    <div class="legend-item"><span class="legend-mark" style="color:#2980b9;">$</span> Sälj</div>
-    <div class="legend-item"><svg width="13" height="16" viewBox="0 0 22 28"><path d="M7 1h8a3 3 0 0 1 3 3v6l3 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V14l3-4V4a3 3 0 0 1 3-3z" fill="#f4d03f" stroke="#9a7d0a" stroke-width="1.5"/><circle cx="11" cy="6" r="2" fill="#fff" stroke="#9a7d0a"/></svg> Saknar öronmärke</div>
+    <div class="legend-item" title="Hondjur som är minst 14 månader: kor och kvigor i kalvningsbar ålder."><span class="legend-swatch" style="background:lightskyblue"></span> Ko/Kviga &ge;14m</div>
+    <div class="legend-item" title="Hondjur yngre än 14 månader."><span class="legend-swatch" style="background:aliceblue"></span> Kviga &lt;14m</div>
+    <div class="legend-item" title="Handjur som är minst 6 månader. Räknas som tjur som kan betäcka på sommarbetet."><span class="legend-swatch" style="background:lightpink"></span> Tjur &ge;6m</div>
+    <div class="legend-item" title="Handjur yngre än 6 månader."><span class="legend-swatch" style="background:mistyrose"></span> Tjur &lt;6m</div>
+    <div class="legend-item" title="Ko eller kviga, minst 9 månader, som enligt utdragen gått på sommarbetet samtidigt som en tjur på minst 6 månader. Djurets kort visar när kalvning tidigast väntas."><svg width="21" height="16" viewBox="0 0 32 24"><g fill="#9b3412" stroke="#4a160a" stroke-width="0.8" stroke-linejoin="round"><path d="M6 10 Q4 13 4.5 16" fill="none" stroke-width="1.2" stroke-linecap="round"/><rect x="9" y="15" width="2.2" height="7.5" rx="1"/><rect x="12.5" y="15" width="2.2" height="7.5" rx="1"/><rect x="18" y="15" width="2.2" height="7.5" rx="1"/><rect x="21.5" y="15" width="2.2" height="7.5" rx="1"/><path d="M8 11 Q8 8 11 8 L21 8 Q23 8 24 6 L25 4 Q27 2.5 29.5 4 L30.5 7 Q31 9 29 9.5 L26.5 9.5 Q25 11 24.5 13 Q24 16.5 21 16.5 L11 16.5 Q8 16.5 8 13 Z"/><path d="M25.6 4.6 Q22.6 3 21.8 5 Q23.8 6.4 25.6 5.8 Z"/></g><path d="M26.6 4 Q28.6 3 29.6 4.4 L30.4 7 Q30.7 8.7 29.2 9 L27.6 9 Q26.4 6.5 26.6 4 Z" fill="#fff"/><circle cx="27.6" cy="5.6" r="0.7" fill="#2a0e05"/></svg> Betäckt</div>
+    <div class="legend-item" title="Har gått med tjur men har ingen kalv registrerad när kalven borde ha kommit."><span class="legend-mark" style="color:#222;">&#x2717;</span> Ej kalvat</div>
+    <div class="legend-item" title="Finns inte med i det senaste utdraget: såld, slaktad eller död."><span class="legend-swatch" style="background:#e2e3e5; border-style:dashed;"></span> Borta</div>
+    <div class="legend-item" title="Ännu inte omställd till ekologisk, räknat från omställningsdatumet under Inställningar."><span class="legend-swatch" style="background:#fff; border: 3px solid #c0392b;"></span> Konventionell</div>
+    <div class="legend-item" title="Ska slaktas – din egen anteckning på djuret."><span class="legend-mark" style="color:red;">&#x2715;</span> Slakt</div>
+    <div class="legend-item" title="Ska säljas – din egen anteckning på djuret."><span class="legend-mark" style="color:#2980b9;">$</span> Sälj</div>
+    <div class="legend-item" title="Ett eller båda öronmärkena saknas – din egen anteckning på djuret."><svg width="13" height="16" viewBox="0 0 22 28"><path d="M7 1h8a3 3 0 0 1 3 3v6l3 4v11a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V14l3-4V4a3 3 0 0 1 3-3z" fill="#f4d03f" stroke="#9a7d0a" stroke-width="1.5"/><circle cx="11" cy="6" r="2" fill="#fff" stroke="#9a7d0a"/></svg> Saknar öronmärke</div>
   </div>
   <div id="header-break"></div>
-  <p id="tagline">Nötbesättningens släktträd – automatiskt uppritat från CDB · av <a href="https://github.com/hugoflordal" target="_blank" rel="noopener">Hugo Flordal</a></p>
+  <p id="tagline">Nötbesättningens släktträd – automatiskt uppritat från <a href="https://jordbruksverket.se/e-tjanster-databaser-och-appar/e-tjanster-och-databaser-djur/cdb-internet" target="_blank" rel="noopener">CDB</a> · av <a href="https://github.com/hugoflordal" target="_blank" rel="noopener">Hugo Flordal</a></p>
   <div id="actions">
     <label class="button primary" title="Läs in utdrag (Djurinnehav) från CDB som PDF">
       Läs in PDF<input type="file" id="pdf-input" accept="application/pdf,.pdf" multiple hidden>
@@ -160,7 +160,7 @@ dialog .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; mar
     <div id="graph"></div>
     <div id="welcome">
       <h2>Inga djur inlästa än</h2>
-      <p>Hämta utdraget <b>Djurinnehav</b> som PDF från CDB och läs in det här, eller dra
+      <p>Hämta utdraget <b>Djurinnehav</b> som PDF från <a href="https://jordbruksverket.se/e-tjanster-databaser-och-appar/e-tjanster-och-databaser-djur/cdb-internet" target="_blank" rel="noopener">CDB</a> och läs in det här, eller dra
         filerna hit. Läs in flera utdrag från olika datum så ser trädet vilka djur som har
         försvunnit och vilka kor som har gått med tjur.</p>
       <p class="hint">PDF:erna läses i din webbläsare och laddas inte upp någonstans.</p>
